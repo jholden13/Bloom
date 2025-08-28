@@ -190,9 +190,7 @@ function TripDetailsPage() {
               ))}
               {outreach.length > 5 && (
                 <div className="text-center">
-                  <Link to="/trips/$tripId/outreach" params={{ tripId }}>
-                    <button className="btn btn-sm btn-ghost">View All Outreach</button>
-                  </Link>
+                  <button className="btn btn-sm btn-ghost">View All Outreach ({outreach.length})</button>
                 </div>
               )}
             </div>

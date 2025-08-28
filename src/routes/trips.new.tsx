@@ -1,15 +1,7 @@
 import { useMutation } from "convex/react";
 import { useForm } from "@tanstack/react-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
 import { api } from "../../convex/_generated/api";
-
-const tripSchema = z.object({
-  name: z.string().min(1, "Trip name is required"),
-  description: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-});
 
 export const Route = createFileRoute("/trips/new")({
   component: NewTripPage,
@@ -61,10 +53,8 @@ function NewTripPage() {
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
               />
-              {!field.state.meta.isValid && field.state.meta.errors && (
-                <em className="text-error text-sm">
-                  {field.state.meta.errors.map(e => e?.message || "Invalid input").join(", ")}
-                </em>
+              {!field.state.meta.isValid && (
+                <em className="text-error text-sm">Trip name is required</em>
               )}
             </fieldset>
           )}

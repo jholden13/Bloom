@@ -3,7 +3,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Authenticated, Unauthenticated, useMutation } from "convex/react";
-import { Calendar, MapPin, Users, Trash2 } from "lucide-react";
+import { Calendar, MapPin, Trash2 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 const tripsQueryOptions = convexQuery(api.trips.list, {});
