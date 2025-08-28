@@ -215,7 +215,35 @@ function TripDetailsPage() {
           ) : (
             <div className="space-y-3">
               {outreach
-                .sort((a, b) => new Date(b.outreachDate).getTime() - new Date(a.outreachDate).getTime())
+                .sort((a, b) => {
+                  // Define priority order for response types
+                  const responsePriority = {
+                    'meeting_scheduled': 1,
+                    'pending': 2,
+                    'no_response': 3,
+                    'not_interested': 4,
+                    'interested': 5 // Still handle existing data
+                  };
+                  
+                  // First sort by response type priority
+                  const aPriority = responsePriority[a.response] || 999;
+                  const bPriority = responsePriority[b.response] || 999;
+                  
+                  if (aPriority !== bPriority) {
+                    return aPriority - bPriority;
+                  }
+                  
+                  // Then by outreach date (newest first)
+                  const dateComparison = new Date(b.outreachDate).getTime() - new Date(a.outreachDate).getTime();
+                  if (dateComparison !== 0) {
+                    return dateComparison;
+                  }
+                  
+                  // Finally by organization name (alphabetical)
+                  const aName = a.organization?.name || '';
+                  const bName = b.organization?.name || '';
+                  return aName.localeCompare(bName);
+                })
                 .slice(0, 5)
                 .map((item) => (
                 <div key={item._id} className="p-4 bg-base-100 rounded-lg">
@@ -234,6 +262,7 @@ function TripDetailsPage() {
                           className={`badge cursor-pointer ${
                             item.response === 'meeting_scheduled' ? 'badge-success' :
                             item.response === 'pending' ? 'badge-warning' :
+                            item.response === 'no_response' ? 'badge-neutral' :
                             'badge-error'
                           }`}
                         >
