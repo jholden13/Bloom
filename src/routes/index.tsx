@@ -2,8 +2,8 @@ import { SignInButton } from "@clerk/clerk-react";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated } from "convex/react";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Authenticated, Unauthenticated, useMutation } from "convex/react";
+import { Calendar, MapPin, Users, Trash2 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 const tripsQueryOptions = convexQuery(api.trips.list, {});
@@ -41,6 +41,16 @@ function HomePage() {
 
 function TripsDashboard() {
   const { data: trips } = useSuspenseQuery(tripsQueryOptions);
+  const deleteTrip = useMutation(api.trips.deleteTrip);
+
+  const handleDeleteTrip = async (tripId: string, tripName: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to trip details
+    e.stopPropagation();
+    
+    if (confirm(`Are you sure you want to delete "${tripName}"? This will also delete all outreach and meetings for this trip.`)) {
+      await deleteTrip({ id: tripId as any });
+    }
+  };
 
   return (
     <>
@@ -59,26 +69,37 @@ function TripsDashboard() {
       ) : (
         <div className="not-prose grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
-            <Link key={trip._id} to="/trips/$tripId" params={{ tripId: trip._id }}>
-              <div className="card bg-base-100 shadow hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="card-body">
-                  <h3 className="card-title text-lg">{trip.name}</h3>
-                  {trip.description && (
-                    <p className="text-sm opacity-70 mb-2">{trip.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 text-sm opacity-60">
-                    <Calendar className="w-4 h-4" />
-                    {trip.startDate || 'No dates set'}
-                  </div>
-                  <div className="card-actions justify-end mt-2">
-                    <div className="badge badge-primary">
+            <div key={trip._id} className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
+              <div className="card-body">
+                <div className="flex justify-between items-start">
+                  <Link to="/trips/$tripId" params={{ tripId: trip._id }} className="flex-1">
+                    <h3 className="card-title text-lg hover:text-primary cursor-pointer">{trip.name}</h3>
+                    {trip.description && (
+                      <p className="text-sm opacity-70 mb-2">{trip.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 text-sm opacity-60">
+                      <Calendar className="w-4 h-4" />
+                      {trip.startDate || 'No dates set'}
+                    </div>
+                  </Link>
+                  <button
+                    onClick={(e) => handleDeleteTrip(trip._id, trip.name, e)}
+                    className="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content"
+                    title="Delete trip"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="card-actions justify-end mt-2">
+                  <Link to="/trips/$tripId" params={{ tripId: trip._id }}>
+                    <div className="badge badge-primary cursor-pointer">
                       <MapPin className="w-3 h-3 mr-1" />
                       View Details
                     </div>
-                  </div>
+                  </Link>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

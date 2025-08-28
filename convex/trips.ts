@@ -63,3 +63,41 @@ export const update = mutation({
     return id;
   },
 });
+
+export const deleteTrip = mutation({
+  args: { id: v.id("trips") },
+  handler: async (ctx, { id }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    const trip = await ctx.db.get(id);
+    if (!trip) {
+      throw new ConvexError("Trip not found");
+    }
+
+    // Delete all related data first
+    // Delete all meetings for this trip
+    const meetings = await ctx.db
+      .query("meetings")
+      .withIndex("by_trip", (q) => q.eq("tripId", id))
+      .collect();
+    for (const meeting of meetings) {
+      await ctx.db.delete(meeting._id);
+    }
+
+    // Delete all outreach for this trip
+    const outreach = await ctx.db
+      .query("outreach")
+      .withIndex("by_trip", (q) => q.eq("tripId", id))
+      .collect();
+    for (const item of outreach) {
+      await ctx.db.delete(item._id);
+    }
+
+    // Finally delete the trip
+    await ctx.db.delete(id);
+    return id;
+  },
+});

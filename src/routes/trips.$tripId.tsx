@@ -1,7 +1,8 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, MapPin, Users, Plus, FileText, CheckCircle } from "lucide-react";
+import { useMutation } from "convex/react";
+import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/trips/$tripId")({
@@ -23,6 +24,23 @@ function TripDetailsPage() {
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
   const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId }));
   const { data: summary } = useSuspenseQuery(convexQuery(api.outreach.getSummary, { tripId }));
+  
+  const deleteOutreach = useMutation(api.outreach.deleteOutreach);
+  const updateOutreachResponse = useMutation(api.outreach.updateResponse);
+
+  const handleDeleteOutreach = async (outreachId: string, organizationName: string) => {
+    if (confirm(`Are you sure you want to delete the outreach to "${organizationName}"?`)) {
+      await deleteOutreach({ id: outreachId as any });
+    }
+  };
+
+  const handleStatusChange = async (outreachId: string, newStatus: string) => {
+    await updateOutreachResponse({
+      id: outreachId as any,
+      response: newStatus as any,
+      responseDate: new Date().toISOString().split('T')[0],
+    });
+  };
 
   if (!trip) {
     return <div>Trip not found</div>;
@@ -103,18 +121,69 @@ function TripDetailsPage() {
               {outreach.slice(0, 5).map((item) => (
                 <div key={item._id} className="p-4 bg-base-100 rounded-lg">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">{item.organization?.name}</h4>
                       <p className="text-sm opacity-70">{item.contact?.name}</p>
                       <p className="text-xs opacity-60">{item.outreachDate}</p>
                     </div>
-                    <div className={`badge ${
-                      item.response === 'meeting_scheduled' ? 'badge-success' :
-                      item.response === 'interested' ? 'badge-info' :
-                      item.response === 'pending' ? 'badge-warning' :
-                      'badge-error'
-                    }`}>
-                      {item.response.replace('_', ' ')}
+                    <div className="flex items-center gap-2">
+                      {/* Status Dropdown */}
+                      <div className="dropdown dropdown-end">
+                        <div 
+                          tabIndex={0} 
+                          role="button" 
+                          className={`badge cursor-pointer ${
+                            item.response === 'meeting_scheduled' ? 'badge-success' :
+                            item.response === 'interested' ? 'badge-info' :
+                            item.response === 'pending' ? 'badge-warning' :
+                            'badge-error'
+                          }`}
+                        >
+                          {item.response.replace('_', ' ')}
+                          <ChevronDown className="w-3 h-3 ml-1" />
+                        </div>
+                        <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                          <li>
+                            <a onClick={() => handleStatusChange(item._id, 'pending')} 
+                               className={item.response === 'pending' ? 'active' : ''}>
+                              <span className="badge badge-warning badge-sm">pending</span>
+                            </a>
+                          </li>
+                          <li>
+                            <a onClick={() => handleStatusChange(item._id, 'interested')} 
+                               className={item.response === 'interested' ? 'active' : ''}>
+                              <span className="badge badge-info badge-sm">interested</span>
+                            </a>
+                          </li>
+                          <li>
+                            <a onClick={() => handleStatusChange(item._id, 'not_interested')} 
+                               className={item.response === 'not_interested' ? 'active' : ''}>
+                              <span className="badge badge-error badge-sm">not interested</span>
+                            </a>
+                          </li>
+                          <li>
+                            <a onClick={() => handleStatusChange(item._id, 'no_response')} 
+                               className={item.response === 'no_response' ? 'active' : ''}>
+                              <span className="badge badge-neutral badge-sm">no response</span>
+                            </a>
+                          </li>
+                          <li>
+                            <a onClick={() => handleStatusChange(item._id, 'meeting_scheduled')} 
+                               className={item.response === 'meeting_scheduled' ? 'active' : ''}>
+                              <span className="badge badge-success badge-sm">meeting scheduled</span>
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => handleDeleteOutreach(item._id, item.organization?.name || 'this organization')}
+                        className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                        title="Delete outreach"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 </div>

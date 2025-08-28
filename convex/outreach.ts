@@ -131,3 +131,32 @@ export const getSummary = query({
     return summary;
   },
 });
+
+export const deleteOutreach = mutation({
+  args: { id: v.id("outreach") },
+  handler: async (ctx, { id }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    const outreach = await ctx.db.get(id);
+    if (!outreach) {
+      throw new ConvexError("Outreach not found");
+    }
+
+    // Delete any related meetings first
+    const meetings = await ctx.db
+      .query("meetings")
+      .collect();
+    
+    const relatedMeetings = meetings.filter(m => m.outreachId === id);
+    for (const meeting of relatedMeetings) {
+      await ctx.db.delete(meeting._id);
+    }
+
+    // Delete the outreach
+    await ctx.db.delete(id);
+    return id;
+  },
+});
