@@ -67,6 +67,11 @@ export const create = mutation({
     scheduledTime: v.string(),
     duration: v.optional(v.number()),
     address: v.string(),
+    streetAddress: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    country: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

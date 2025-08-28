@@ -5,6 +5,23 @@ import { useMutation } from "convex/react";
 import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown, Edit } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
+// Helper function to format address for Google Maps and display
+const formatAddress = (item: any) => {
+  // Check for new structured address fields first
+  if (item.proposedStreetAddress || item.streetAddress) {
+    const parts = [
+      item.proposedStreetAddress || item.streetAddress,
+      item.proposedCity || item.city,
+      item.proposedState || item.state,
+      item.proposedZipCode || item.zipCode,
+      item.proposedCountry || item.country,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+  // Fall back to legacy single address field
+  return item.proposedAddress || item.address || null;
+};
+
 export const Route = createFileRoute("/trips/$tripId")({
   loader: async ({ context: { queryClient }, params: { tripId } }) => {
     await Promise.all([
@@ -199,7 +216,7 @@ function TripDetailsPage() {
         <div className="not-prose">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Upcoming Meetings</h2>
-            <Link to="/trips/$tripId/meetings-print" params={{ tripId }}>
+            <Link to="/print-meetings" search={{ tripId }}>
               <button className="btn btn-outline btn-sm">
                 <FileText className="w-4 h-4" />
                 Print Schedule
@@ -288,15 +305,17 @@ function TripDetailsPage() {
                                   <span className="text-lg font-medium">{item.time}</span>
                                 </div>
                                 
-                                {(item.address || item.proposedAddress) && (
+                                {formatAddress(item) && (
                                   <div className="flex items-center gap-2">
                                     <MapPin className="w-5 h-5 text-primary" />
-                                    <span className="text-lg font-medium">
-                                      {item.address || item.proposedAddress}
-                                      {item.type === 'scheduled' && item.proposedAddress && (
-                                        <span className="text-sm font-normal opacity-60 ml-2">(proposed)</span>
-                                      )}
-                                    </span>
+                                    <a
+                                      href={`https://maps.google.com/maps?q=${encodeURIComponent(formatAddress(item))}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-lg font-medium text-primary hover:text-primary-focus underline"
+                                    >
+                                      {formatAddress(item)}
+                                    </a>
                                   </div>
                                 )}
                               </div>

@@ -31,7 +31,11 @@ function AddOutreachPage() {
       contactPhone: "",
       outreachDate: new Date().toISOString().split('T')[0],
       notes: "",
-      proposedAddress: "",
+      proposedStreetAddress: "",
+      proposedCity: "",
+      proposedState: "",
+      proposedCountry: "",
+      proposedZipCode: "",
       proposedMeetingTime: "",
     },
     onSubmit: async ({ value }) => {
@@ -57,7 +61,11 @@ function AddOutreachPage() {
           organizationId,
           outreachDate: value.outreachDate,
           notes: value.notes || undefined,
-          proposedAddress: value.proposedAddress || undefined,
+          proposedStreetAddress: value.proposedStreetAddress || undefined,
+          proposedCity: value.proposedCity || undefined,
+          proposedState: value.proposedState || undefined,
+          proposedCountry: value.proposedCountry || undefined,
+          proposedZipCode: value.proposedZipCode || undefined,
           proposedMeetingTime: value.proposedMeetingTime || undefined,
         });
 
@@ -180,14 +188,16 @@ function AddOutreachPage() {
             )}
           </form.Field>
 
-          <div className="grid md:grid-cols-2 gap-4 mb-4">
-            <form.Field name="proposedAddress">
+          <div className="mb-4">
+            <h4 className="font-medium mb-3">Meeting Address</h4>
+            
+            <form.Field name="proposedStreetAddress">
               {(field) => (
-                <fieldset>
-                  <legend>Proposed Address</legend>
+                <fieldset className="mb-3">
+                  <legend>Street Address</legend>
                   <input
                     className="input w-full"
-                    placeholder="Meeting location or address"
+                    placeholder="123 Main Street"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -196,13 +206,60 @@ function AddOutreachPage() {
               )}
             </form.Field>
 
-            <form.Field name="proposedMeetingTime">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+              <form.Field name="proposedCity">
+                {(field) => (
+                  <fieldset>
+                    <legend>City</legend>
+                    <input
+                      className="input w-full"
+                      placeholder="City"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  </fieldset>
+                )}
+              </form.Field>
+
+              <form.Field name="proposedState">
+                {(field) => (
+                  <fieldset>
+                    <legend>State/Province</legend>
+                    <input
+                      className="input w-full"
+                      placeholder="State"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  </fieldset>
+                )}
+              </form.Field>
+
+              <form.Field name="proposedZipCode">
+                {(field) => (
+                  <fieldset>
+                    <legend>ZIP Code</legend>
+                    <input
+                      className="input w-full"
+                      placeholder="12345"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  </fieldset>
+                )}
+              </form.Field>
+            </div>
+
+            <form.Field name="proposedCountry">
               {(field) => (
-                <fieldset>
-                  <legend>Proposed Meeting Time</legend>
+                <fieldset className="mb-4">
+                  <legend>Country</legend>
                   <input
-                    type="datetime-local"
                     className="input w-full"
+                    placeholder="United States"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -211,6 +268,21 @@ function AddOutreachPage() {
               )}
             </form.Field>
           </div>
+
+          <form.Field name="proposedMeetingTime">
+            {(field) => (
+              <fieldset className="mb-4">
+                <legend>Meeting Time</legend>
+                <input
+                  type="datetime-local"
+                  className="input w-full"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              </fieldset>
+            )}
+          </form.Field>
 
           <form.Field name="notes">
             {(field) => (

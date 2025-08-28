@@ -2,10 +2,33 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, MapPin, Printer } from "lucide-react";
+import { z } from "zod";
 import { api } from "../../convex/_generated/api";
 
-export const Route = createFileRoute("/trips/$tripId/meetings-print")({
-  loader: async ({ context: { queryClient }, params: { tripId } }) => {
+// Helper function to format address for Google Maps and display
+const formatAddress = (item: any) => {
+  // Check for new structured address fields first
+  if (item.proposedStreetAddress || item.streetAddress) {
+    const parts = [
+      item.proposedStreetAddress || item.streetAddress,
+      item.proposedCity || item.city,
+      item.proposedState || item.state,
+      item.proposedZipCode || item.zipCode,
+      item.proposedCountry || item.country,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+  // Fall back to legacy single address field
+  return item.proposedAddress || item.address || null;
+};
+
+const searchSchema = z.object({
+  tripId: z.string(),
+});
+
+export const Route = createFileRoute("/print-meetings")({
+  validateSearch: searchSchema,
+  loader: async ({ context: { queryClient }, search: { tripId } }) => {
     await Promise.all([
       queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
       queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
@@ -16,7 +39,7 @@ export const Route = createFileRoute("/trips/$tripId/meetings-print")({
 });
 
 function MeetingsPrintPage() {
-  const { tripId } = Route.useParams();
+  const { tripId } = Route.useSearch();
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
@@ -175,15 +198,17 @@ function MeetingsPrintPage() {
                                 </span>
                               </div>
                               
-                              {(item.address || item.proposedAddress) && (
+                              {formatAddress(item) && (
                                 <div className="flex items-center gap-2">
                                   <MapPin className="w-5 h-5 no-print" />
-                                  <span className="meeting-address text-lg">
-                                    {item.address || item.proposedAddress}
-                                    {item.type === 'scheduled' && item.proposedAddress && (
-                                      <span className="text-sm font-normal opacity-60 ml-2">(proposed)</span>
-                                    )}
-                                  </span>
+                                  <a
+                                    href={`https://maps.google.com/maps?q=${encodeURIComponent(formatAddress(item))}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="meeting-address text-lg text-primary hover:text-primary-focus underline"
+                                  >
+                                    {formatAddress(item)}
+                                  </a>
                                 </div>
                               )}
                             </div>

@@ -45,6 +45,11 @@ export default defineSchema({
     responseDate: v.optional(v.string()),
     notes: v.optional(v.string()),
     proposedAddress: v.optional(v.string()),
+    proposedStreetAddress: v.optional(v.string()),
+    proposedCity: v.optional(v.string()),
+    proposedState: v.optional(v.string()),
+    proposedCountry: v.optional(v.string()),
+    proposedZipCode: v.optional(v.string()),
     proposedMeetingTime: v.optional(v.string()),
   })
     .index("by_trip", ["tripId"])
@@ -62,6 +67,11 @@ export default defineSchema({
     scheduledTime: v.string(),
     duration: v.optional(v.number()), // minutes
     address: v.string(),
+    streetAddress: v.optional(v.string()),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    country: v.optional(v.string()),
+    zipCode: v.optional(v.string()),
     notes: v.optional(v.string()),
     status: v.union(
       v.literal("scheduled"),

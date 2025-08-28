@@ -60,6 +60,11 @@ export const create = mutation({
     outreachDate: v.string(),
     notes: v.optional(v.string()),
     proposedAddress: v.optional(v.string()),
+    proposedStreetAddress: v.optional(v.string()),
+    proposedCity: v.optional(v.string()),
+    proposedState: v.optional(v.string()),
+    proposedCountry: v.optional(v.string()),
+    proposedZipCode: v.optional(v.string()),
     proposedMeetingTime: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -114,6 +119,11 @@ export const update = mutation({
     id: v.id("outreach"),
     notes: v.optional(v.string()),
     proposedAddress: v.optional(v.string()),
+    proposedStreetAddress: v.optional(v.string()),
+    proposedCity: v.optional(v.string()),
+    proposedState: v.optional(v.string()),
+    proposedCountry: v.optional(v.string()),
+    proposedZipCode: v.optional(v.string()),
     proposedMeetingTime: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
