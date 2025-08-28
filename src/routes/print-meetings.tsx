@@ -23,23 +23,31 @@ const formatAddress = (item: any) => {
 };
 
 const searchSchema = z.object({
-  tripId: z.string(),
+  tripId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/print-meetings")({
   validateSearch: searchSchema,
-  loader: async ({ context: { queryClient }, search: { tripId } }) => {
-    await Promise.all([
-      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
-      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId })),
-    ]);
+  loader: async ({ context: { queryClient }, search }) => {
+    const tripId = search?.tripId;
+    if (tripId) {
+      await Promise.all([
+        queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
+        queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
+        queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId })),
+      ]);
+    }
   },
   component: MeetingsPrintPage,
 });
 
 function MeetingsPrintPage() {
-  const { tripId } = Route.useSearch();
+  const search = Route.useSearch();
+  const tripId = search?.tripId;
+  
+  if (!tripId) {
+    return <div>Missing trip ID parameter</div>;
+  }
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
@@ -180,7 +188,7 @@ function MeetingsPrintPage() {
                           <div className="flex-1">
                             <h3 className="text-lg font-semibold mb-2">
                               {item.type === 'formal' ? item.title : item.organization?.name}
-                              {item.type === 'scheduled' && (
+                              {item.type === 'scheduled' && (!formatAddress(item) || !item.proposedMeetingTime) && (
                                 <span className="text-sm font-normal opacity-60 ml-2">(details pending)</span>
                               )}
                             </h3>

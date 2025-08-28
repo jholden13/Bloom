@@ -291,7 +291,7 @@ function TripDetailsPage() {
                             <div className="flex-1">
                               <h4 className="font-semibold text-lg mb-2">
                                 {item.type === 'formal' ? item.title : item.organization?.name}
-                                {item.type === 'scheduled' && (
+                                {item.type === 'scheduled' && (!formatAddress(item) || !item.proposedMeetingTime) && (
                                   <span className="text-sm font-normal opacity-60 ml-2">(pending details)</span>
                                 )}
                               </h4>
