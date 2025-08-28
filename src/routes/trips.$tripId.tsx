@@ -172,7 +172,7 @@ function TripDetailsPage() {
       </div>
 
       {/* Summary Stats */}
-      <div className="not-prose grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="not-prose grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="stat bg-base-100 rounded-lg">
           <div className="stat-value text-2xl">{summary.total}</div>
           <div className="stat-title">Total Outreach</div>
@@ -186,7 +186,11 @@ function TripDetailsPage() {
           <div className="stat-title">Meetings</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-error">{summary.not_interested + summary.no_response + summary.interested}</div>
+          <div className="stat-value text-2xl text-neutral">{summary.no_response}</div>
+          <div className="stat-title">No Response</div>
+        </div>
+        <div className="stat bg-base-100 rounded-lg">
+          <div className="stat-value text-2xl text-error">{summary.not_interested + summary.interested}</div>
           <div className="stat-title">No Interest</div>
         </div>
       </div>
