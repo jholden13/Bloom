@@ -26,9 +26,6 @@ function NewTripPage() {
       startDate: "",
       endDate: "",
     },
-    validators: {
-      onChange: tripSchema,
-    },
     onSubmit: async ({ value }) => {
       const tripId = await createTrip({
         name: value.name,
@@ -64,9 +61,9 @@ function NewTripPage() {
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
               />
-              {!field.state.meta.isValid && (
+              {!field.state.meta.isValid && field.state.meta.errors && (
                 <em className="text-error text-sm">
-                  {field.state.meta.errors.map(e => e.message).join(", ")}
+                  {field.state.meta.errors.map(e => e?.message || "Invalid input").join(", ")}
                 </em>
               )}
             </fieldset>

@@ -67,7 +67,7 @@ function TripDetailsPage() {
 
       {/* Action Buttons */}
       <div className="not-prose flex gap-2 justify-center">
-        <Link to="/trips/$tripId/outreach/new" params={{ tripId }}>
+        <Link to="/add-outreach" search={{ tripId }}>
           <button className="btn btn-primary">
             <Plus className="w-4 h-4" />
             Add Outreach
@@ -94,7 +94,7 @@ function TripDetailsPage() {
           {outreach.length === 0 ? (
             <div className="p-6 bg-base-200 rounded-lg text-center">
               <p className="opacity-70">No outreach recorded yet.</p>
-              <Link to="/trips/$tripId/outreach/new" params={{ tripId }}>
+              <Link to="/add-outreach" search={{ tripId }}>
                 <button className="btn btn-primary btn-sm mt-2">Add First Outreach</button>
               </Link>
             </div>

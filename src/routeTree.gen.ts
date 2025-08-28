@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as AddOutreachImport } from './routes/add-outreach'
 import { Route as IndexImport } from './routes/index'
 import { Route as TripsNewImport } from './routes/trips.new'
 import { Route as TripsTripIdImport } from './routes/trips.$tripId'
@@ -21,6 +22,12 @@ import { Route as TripsTripIdOutreachNewImport } from './routes/trips.$tripId.ou
 import { Route as TripsTripIdOutreachOutreachIdScheduleImport } from './routes/trips.$tripId.outreach.$outreachId.schedule'
 
 // Create/Update Routes
+
+const AddOutreachRoute = AddOutreachImport.update({
+  id: '/add-outreach',
+  path: '/add-outreach',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -80,6 +87,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/add-outreach': {
+      id: '/add-outreach'
+      path: '/add-outreach'
+      fullPath: '/add-outreach'
+      preLoaderRoute: typeof AddOutreachImport
       parentRoute: typeof rootRoute
     }
     '/trips/$tripId': {
@@ -168,6 +182,7 @@ const TripsTripIdRouteWithChildren = TripsTripIdRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-outreach': typeof AddOutreachRoute
   '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
   '/trips/$tripId/outreach': typeof TripsTripIdOutreachRouteWithChildren
@@ -179,6 +194,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-outreach': typeof AddOutreachRoute
   '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
   '/trips/$tripId/outreach': typeof TripsTripIdOutreachRouteWithChildren
@@ -191,6 +207,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/add-outreach': typeof AddOutreachRoute
   '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
   '/trips/$tripId/outreach': typeof TripsTripIdOutreachRouteWithChildren
@@ -204,6 +221,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/add-outreach'
     | '/trips/$tripId'
     | '/trips/new'
     | '/trips/$tripId/outreach'
@@ -214,6 +232,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/add-outreach'
     | '/trips/$tripId'
     | '/trips/new'
     | '/trips/$tripId/outreach'
@@ -224,6 +243,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/add-outreach'
     | '/trips/$tripId'
     | '/trips/new'
     | '/trips/$tripId/outreach'
@@ -236,12 +256,14 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddOutreachRoute: typeof AddOutreachRoute
   TripsTripIdRoute: typeof TripsTripIdRouteWithChildren
   TripsNewRoute: typeof TripsNewRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddOutreachRoute: AddOutreachRoute,
   TripsTripIdRoute: TripsTripIdRouteWithChildren,
   TripsNewRoute: TripsNewRoute,
 }
@@ -257,12 +279,16 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/add-outreach",
         "/trips/$tripId",
         "/trips/new"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/add-outreach": {
+      "filePath": "add-outreach.tsx"
     },
     "/trips/$tripId": {
       "filePath": "trips.$tripId.tsx",

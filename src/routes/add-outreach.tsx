@@ -5,23 +5,17 @@ import { z } from "zod";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 
-const outreachSchema = z.object({
-  organizationName: z.string().min(1, "Organization name is required"),
-  organizationWebsite: z.string().optional(),
-  contactName: z.string().min(1, "Contact name is required"),
-  contactEmail: z.string().email("Valid email is required"),
-  contactTitle: z.string().optional(),
-  contactPhone: z.string().optional(),
-  outreachDate: z.string().min(1, "Outreach date is required"),
-  notes: z.string().optional(),
+const searchSchema = z.object({
+  tripId: z.string(),
 });
 
-export const Route = createFileRoute("/trips/$tripId/outreach/new")({
-  component: NewOutreachPage,
+export const Route = createFileRoute("/add-outreach")({
+  validateSearch: searchSchema,
+  component: AddOutreachPage,
 });
 
-function NewOutreachPage() {
-  const { tripId } = Route.useParams();
+function AddOutreachPage() {
+  const { tripId } = Route.useSearch();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -60,7 +54,7 @@ function NewOutreachPage() {
 
         // Create outreach record
         await createOutreach({
-          tripId,
+          tripId: tripId as any, // Type assertion for now
           contactId,
           organizationId,
           outreachDate: value.outreachDate,
@@ -102,12 +96,8 @@ function NewOutreachPage() {
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
+                  required
                 />
-                {!field.state.meta.isValid && field.state.meta.errors && (
-                  <em className="text-error text-sm">
-                    {field.state.meta.errors.map(e => e?.message || "Invalid input").join(", ")}
-                  </em>
-                )}
               </fieldset>
             )}
           </form.Field>
@@ -143,12 +133,8 @@ function NewOutreachPage() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    required
                   />
-                  {!field.state.meta.isValid && (
-                    <em className="text-error text-sm">
-                      {field.state.meta.errors.map(e => e.message).join(", ")}
-                    </em>
-                  )}
                 </fieldset>
               )}
             </form.Field>
@@ -181,12 +167,8 @@ function NewOutreachPage() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
+                    required
                   />
-                  {!field.state.meta.isValid && (
-                    <em className="text-error text-sm">
-                      {field.state.meta.errors.map(e => e.message).join(", ")}
-                    </em>
-                  )}
                 </fieldset>
               )}
             </form.Field>
@@ -223,12 +205,8 @@ function NewOutreachPage() {
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
+                  required
                 />
-                {!field.state.meta.isValid && field.state.meta.errors && (
-                  <em className="text-error text-sm">
-                    {field.state.meta.errors.map(e => e?.message || "Invalid input").join(", ")}
-                  </em>
-                )}
               </fieldset>
             )}
           </form.Field>
@@ -252,7 +230,7 @@ function NewOutreachPage() {
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={!form.state.canSubmit || isSubmitting}
+            disabled={isSubmitting}
             className="btn btn-primary"
           >
             {isSubmitting ? "Creating..." : "Record Outreach"}
