@@ -172,7 +172,7 @@ function TripDetailsPage() {
       </div>
 
       {/* Summary Stats */}
-      <div className="not-prose grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="not-prose grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="stat bg-base-100 rounded-lg">
           <div className="stat-value text-2xl">{summary.total}</div>
           <div className="stat-title">Total Outreach</div>
@@ -182,15 +182,11 @@ function TripDetailsPage() {
           <div className="stat-title">Pending</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-success">{summary.interested}</div>
-          <div className="stat-title">Interested</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
           <div className="stat-value text-2xl text-primary">{summary.meeting_scheduled}</div>
           <div className="stat-title">Meetings</div>
         </div>
         <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-error">{summary.not_interested + summary.no_response}</div>
+          <div className="stat-value text-2xl text-error">{summary.not_interested + summary.no_response + summary.interested}</div>
           <div className="stat-title">No Interest</div>
         </div>
       </div>
@@ -218,7 +214,10 @@ function TripDetailsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {outreach.slice(0, 5).map((item) => (
+              {outreach
+                .sort((a, b) => new Date(b.outreachDate).getTime() - new Date(a.outreachDate).getTime())
+                .slice(0, 5)
+                .map((item) => (
                 <div key={item._id} className="p-4 bg-base-100 rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -234,7 +233,6 @@ function TripDetailsPage() {
                           role="button" 
                           className={`badge cursor-pointer ${
                             item.response === 'meeting_scheduled' ? 'badge-success' :
-                            item.response === 'interested' ? 'badge-info' :
                             item.response === 'pending' ? 'badge-warning' :
                             'badge-error'
                           }`}
@@ -247,12 +245,6 @@ function TripDetailsPage() {
                             <a onClick={() => handleStatusChange(item._id, 'pending')} 
                                className={item.response === 'pending' ? 'active' : ''}>
                               <span className="badge badge-warning badge-sm">pending</span>
-                            </a>
-                          </li>
-                          <li>
-                            <a onClick={() => handleStatusChange(item._id, 'interested')} 
-                               className={item.response === 'interested' ? 'active' : ''}>
-                              <span className="badge badge-info badge-sm">interested</span>
                             </a>
                           </li>
                           <li>
