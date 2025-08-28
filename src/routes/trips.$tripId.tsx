@@ -2,7 +2,8 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown, Edit } from "lucide-react";
+import { useState } from "react";
+import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown, Edit, Pencil } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 // Helper function to format address for Google Maps and display
@@ -36,6 +37,11 @@ export const Route = createFileRoute("/trips/$tripId")({
 
 function TripDetailsPage() {
   const { tripId } = Route.useParams();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
@@ -44,6 +50,15 @@ function TripDetailsPage() {
   
   const deleteOutreach = useMutation(api.outreach.deleteOutreach);
   const updateOutreachResponse = useMutation(api.outreach.updateResponse);
+  const updateTrip = useMutation(api.trips.update);
+
+  // Initialize edit values when trip data loads
+  if (trip && !isEditing && !editName) {
+    setEditName(trip.name || "");
+    setEditDescription(trip.description || "");
+    setEditStartDate(trip.startDate || "");
+    setEditEndDate(trip.endDate || "");
+  }
 
   const handleDeleteOutreach = async (outreachId: string, organizationName: string) => {
     if (confirm(`Are you sure you want to delete the outreach to "${organizationName}"?`)) {
@@ -59,6 +74,25 @@ function TripDetailsPage() {
     });
   };
 
+  const handleSaveTrip = async () => {
+    await updateTrip({
+      id: tripId as any,
+      name: editName || undefined,
+      description: editDescription || undefined,
+      startDate: editStartDate || undefined,
+      endDate: editEndDate || undefined,
+    });
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditName(trip?.name || "");
+    setEditDescription(trip?.description || "");
+    setEditStartDate(trip?.startDate || "");
+    setEditEndDate(trip?.endDate || "");
+    setIsEditing(false);
+  };
+
   if (!trip) {
     return <div>Trip not found</div>;
   }
@@ -66,12 +100,73 @@ function TripDetailsPage() {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h1>{trip.name}</h1>
-        {trip.description && <p className="text-lg opacity-80">{trip.description}</p>}
-        {trip.startDate && (
-          <div className="not-prose flex items-center justify-center gap-2 text-sm opacity-60 mt-2">
-            <Calendar className="w-4 h-4" />
-            {trip.startDate} {trip.endDate && `- ${trip.endDate}`}
+        {isEditing ? (
+          <div className="not-prose space-y-4 max-w-2xl mx-auto">
+            <div className="space-y-2">
+              <input
+                className="input w-full text-center text-3xl font-bold"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Trip name"
+              />
+              <textarea
+                className="textarea w-full text-center text-lg"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Trip description (optional)"
+                rows={2}
+              />
+            </div>
+            
+            <div className="flex gap-4 justify-center">
+              <div className="flex flex-col">
+                <label className="text-sm opacity-70 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm opacity-70 mb-1">End Date</label>
+                <input
+                  type="date"
+                  className="input"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 justify-center">
+              <button onClick={handleSaveTrip} className="btn btn-primary btn-sm">
+                <CheckCircle className="w-4 h-4" />
+                Save
+              </button>
+              <button onClick={handleCancelEdit} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="relative">
+            <h1>{trip.name}</h1>
+            {trip.description && <p className="text-lg opacity-80">{trip.description}</p>}
+            {trip.startDate && (
+              <div className="not-prose flex items-center justify-center gap-2 text-sm opacity-60 mt-2">
+                <Calendar className="w-4 h-4" />
+                {trip.startDate} {trip.endDate && `- ${trip.endDate}`}
+              </div>
+            )}
+            
+            <button
+              onClick={() => setIsEditing(true)}
+              className="absolute top-0 right-0 btn btn-ghost btn-sm"
+              title="Edit trip details"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
