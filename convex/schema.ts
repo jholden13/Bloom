@@ -44,6 +44,8 @@ export default defineSchema({
     ),
     responseDate: v.optional(v.string()),
     notes: v.optional(v.string()),
+    proposedAddress: v.optional(v.string()),
+    proposedMeetingTime: v.optional(v.string()),
   })
     .index("by_trip", ["tripId"])
     .index("by_contact", ["contactId"])

@@ -59,6 +59,8 @@ export const create = mutation({
     organizationId: v.id("organizations"),
     outreachDate: v.string(),
     notes: v.optional(v.string()),
+    proposedAddress: v.optional(v.string()),
+    proposedMeetingTime: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -97,6 +99,29 @@ export const updateResponse = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
+    const outreach = await ctx.db.get(id);
+    if (!outreach) {
+      throw new ConvexError("Outreach not found");
+    }
+
+    await ctx.db.patch(id, updates);
+    return id;
+  },
+});
+
+export const update = mutation({
+  args: {
+    id: v.id("outreach"),
+    notes: v.optional(v.string()),
+    proposedAddress: v.optional(v.string()),
+    proposedMeetingTime: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, ...updates }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
     const outreach = await ctx.db.get(id);
     if (!outreach) {
       throw new ConvexError("Outreach not found");

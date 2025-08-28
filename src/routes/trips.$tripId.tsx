@@ -2,7 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown } from "lucide-react";
+import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown, Edit } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 export const Route = createFileRoute("/trips/$tripId")({
@@ -91,18 +91,6 @@ function TripDetailsPage() {
             Add Outreach
           </button>
         </Link>
-        <Link to="/trips/$tripId/schedule" params={{ tripId }}>
-          <button className="btn btn-secondary">
-            <Calendar className="w-4 h-4" />
-            View Schedule
-          </button>
-        </Link>
-        <Link to="/trips/$tripId/summary" params={{ tripId }}>
-          <button className="btn btn-outline">
-            <FileText className="w-4 h-4" />
-            Summary Report
-          </button>
-        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -176,6 +164,16 @@ function TripDetailsPage() {
                         </ul>
                       </div>
                       
+                      {/* Edit Button */}
+                      <Link to="/edit-outreach" search={{ id: item._id }}>
+                        <button
+                          className="btn btn-ghost btn-xs text-info hover:bg-info hover:text-info-content"
+                          title="Edit outreach"
+                        >
+                          <Edit className="w-3 h-3" />
+                        </button>
+                      </Link>
+
                       {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteOutreach(item._id, item.organization?.name || 'this organization')}
@@ -200,39 +198,78 @@ function TripDetailsPage() {
         {/* Upcoming Meetings */}
         <div className="not-prose">
           <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>
-          {meetings.length === 0 ? (
-            <div className="p-6 bg-base-200 rounded-lg text-center">
-              <p className="opacity-70">No meetings scheduled yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {meetings.filter(m => m.status !== 'cancelled').slice(0, 5).map((meeting) => (
-                <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">{meeting.title}</h4>
-                      <p className="text-sm opacity-70">{meeting.organization?.name}</p>
-                      <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
-                        <Calendar className="w-3 h-3" />
-                        {meeting.scheduledDate} at {meeting.scheduledTime}
+          {(() => {
+            const scheduledMeetings = meetings.filter(m => m.status !== 'cancelled');
+            const scheduledOutreach = outreach.filter(o => o.response === 'meeting_scheduled');
+            const totalMeetingItems = scheduledMeetings.length + scheduledOutreach.length;
+            
+            return totalMeetingItems === 0 ? (
+              <div className="p-6 bg-base-200 rounded-lg text-center">
+                <p className="opacity-70">No meetings scheduled yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Formal Meetings */}
+                {scheduledMeetings.slice(0, 5).map((meeting) => (
+                  <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{meeting.title}</h4>
+                        <p className="text-sm opacity-70">{meeting.organization?.name}</p>
+                        <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          {meeting.scheduledDate} at {meeting.scheduledTime}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs opacity-60">
+                          <MapPin className="w-3 h-3" />
+                          {meeting.address}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 text-xs opacity-60">
-                        <MapPin className="w-3 h-3" />
-                        {meeting.address}
+                      <div className={`badge ${
+                        meeting.status === 'confirmed' ? 'badge-success' :
+                        meeting.status === 'completed' ? 'badge-info' :
+                        'badge-warning'
+                      }`}>
+                        {meeting.status}
                       </div>
-                    </div>
-                    <div className={`badge ${
-                      meeting.status === 'confirmed' ? 'badge-success' :
-                      meeting.status === 'completed' ? 'badge-info' :
-                      'badge-warning'
-                    }`}>
-                      {meeting.status}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+                
+                {/* Scheduled Outreach (awaiting formal meeting) */}
+                {scheduledOutreach.map((item) => (
+                  <div key={`outreach-${item._id}`} className="p-4 bg-base-100 rounded-lg border border-success border-dashed">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{item.organization?.name} <span className="text-xs opacity-60">(pending meeting details)</span></h4>
+                        <p className="text-sm opacity-70">{item.contact?.name}</p>
+                        <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          Outreach: {item.outreachDate}
+                          {item.responseDate && ` • Response: ${item.responseDate}`}
+                        </div>
+                        {item.proposedAddress && (
+                          <div className="flex items-center gap-1 text-xs opacity-60">
+                            <MapPin className="w-3 h-3" />
+                            Proposed: {item.proposedAddress}
+                          </div>
+                        )}
+                        {item.proposedMeetingTime && (
+                          <div className="flex items-center gap-1 text-xs opacity-60">
+                            <Calendar className="w-3 h-3" />
+                            Proposed time: {item.proposedMeetingTime}
+                          </div>
+                        )}
+                      </div>
+                      <div className="badge badge-success">
+                        meeting scheduled
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

@@ -11,14 +11,19 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as EditOutreachImport } from './routes/edit-outreach'
 import { Route as AddOutreachImport } from './routes/add-outreach'
 import { Route as IndexImport } from './routes/index'
 import { Route as TripsNewImport } from './routes/trips.new'
 import { Route as TripsTripIdImport } from './routes/trips.$tripId'
-import { Route as TripsTripIdSummaryImport } from './routes/trips.$tripId.summary'
-import { Route as TripsTripIdScheduleImport } from './routes/trips.$tripId.schedule'
 
 // Create/Update Routes
+
+const EditOutreachRoute = EditOutreachImport.update({
+  id: '/edit-outreach',
+  path: '/edit-outreach',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AddOutreachRoute = AddOutreachImport.update({
   id: '/add-outreach',
@@ -44,18 +49,6 @@ const TripsTripIdRoute = TripsTripIdImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const TripsTripIdSummaryRoute = TripsTripIdSummaryImport.update({
-  id: '/summary',
-  path: '/summary',
-  getParentRoute: () => TripsTripIdRoute,
-} as any)
-
-const TripsTripIdScheduleRoute = TripsTripIdScheduleImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => TripsTripIdRoute,
-} as any)
-
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -74,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AddOutreachImport
       parentRoute: typeof rootRoute
     }
+    '/edit-outreach': {
+      id: '/edit-outreach'
+      path: '/edit-outreach'
+      fullPath: '/edit-outreach'
+      preLoaderRoute: typeof EditOutreachImport
+      parentRoute: typeof rootRoute
+    }
     '/trips/$tripId': {
       id: '/trips/$tripId'
       path: '/trips/$tripId'
@@ -88,65 +88,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsNewImport
       parentRoute: typeof rootRoute
     }
-    '/trips/$tripId/schedule': {
-      id: '/trips/$tripId/schedule'
-      path: '/schedule'
-      fullPath: '/trips/$tripId/schedule'
-      preLoaderRoute: typeof TripsTripIdScheduleImport
-      parentRoute: typeof TripsTripIdImport
-    }
-    '/trips/$tripId/summary': {
-      id: '/trips/$tripId/summary'
-      path: '/summary'
-      fullPath: '/trips/$tripId/summary'
-      preLoaderRoute: typeof TripsTripIdSummaryImport
-      parentRoute: typeof TripsTripIdImport
-    }
   }
 }
 
 // Create and export the route tree
 
-interface TripsTripIdRouteChildren {
-  TripsTripIdScheduleRoute: typeof TripsTripIdScheduleRoute
-  TripsTripIdSummaryRoute: typeof TripsTripIdSummaryRoute
-}
-
-const TripsTripIdRouteChildren: TripsTripIdRouteChildren = {
-  TripsTripIdScheduleRoute: TripsTripIdScheduleRoute,
-  TripsTripIdSummaryRoute: TripsTripIdSummaryRoute,
-}
-
-const TripsTripIdRouteWithChildren = TripsTripIdRoute._addFileChildren(
-  TripsTripIdRouteChildren,
-)
-
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/add-outreach': typeof AddOutreachRoute
-  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
+  '/edit-outreach': typeof EditOutreachRoute
+  '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
-  '/trips/$tripId/schedule': typeof TripsTripIdScheduleRoute
-  '/trips/$tripId/summary': typeof TripsTripIdSummaryRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/add-outreach': typeof AddOutreachRoute
-  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
+  '/edit-outreach': typeof EditOutreachRoute
+  '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
-  '/trips/$tripId/schedule': typeof TripsTripIdScheduleRoute
-  '/trips/$tripId/summary': typeof TripsTripIdSummaryRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/add-outreach': typeof AddOutreachRoute
-  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
+  '/edit-outreach': typeof EditOutreachRoute
+  '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
-  '/trips/$tripId/schedule': typeof TripsTripIdScheduleRoute
-  '/trips/$tripId/summary': typeof TripsTripIdSummaryRoute
 }
 
 export interface FileRouteTypes {
@@ -154,40 +123,34 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/add-outreach'
+    | '/edit-outreach'
     | '/trips/$tripId'
     | '/trips/new'
-    | '/trips/$tripId/schedule'
-    | '/trips/$tripId/summary'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/add-outreach'
-    | '/trips/$tripId'
-    | '/trips/new'
-    | '/trips/$tripId/schedule'
-    | '/trips/$tripId/summary'
+  to: '/' | '/add-outreach' | '/edit-outreach' | '/trips/$tripId' | '/trips/new'
   id:
     | '__root__'
     | '/'
     | '/add-outreach'
+    | '/edit-outreach'
     | '/trips/$tripId'
     | '/trips/new'
-    | '/trips/$tripId/schedule'
-    | '/trips/$tripId/summary'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddOutreachRoute: typeof AddOutreachRoute
-  TripsTripIdRoute: typeof TripsTripIdRouteWithChildren
+  EditOutreachRoute: typeof EditOutreachRoute
+  TripsTripIdRoute: typeof TripsTripIdRoute
   TripsNewRoute: typeof TripsNewRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddOutreachRoute: AddOutreachRoute,
-  TripsTripIdRoute: TripsTripIdRouteWithChildren,
+  EditOutreachRoute: EditOutreachRoute,
+  TripsTripIdRoute: TripsTripIdRoute,
   TripsNewRoute: TripsNewRoute,
 }
 
@@ -203,6 +166,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/add-outreach",
+        "/edit-outreach",
         "/trips/$tripId",
         "/trips/new"
       ]
@@ -213,23 +177,14 @@ export const routeTree = rootRoute
     "/add-outreach": {
       "filePath": "add-outreach.tsx"
     },
+    "/edit-outreach": {
+      "filePath": "edit-outreach.tsx"
+    },
     "/trips/$tripId": {
-      "filePath": "trips.$tripId.tsx",
-      "children": [
-        "/trips/$tripId/schedule",
-        "/trips/$tripId/summary"
-      ]
+      "filePath": "trips.$tripId.tsx"
     },
     "/trips/new": {
       "filePath": "trips.new.tsx"
-    },
-    "/trips/$tripId/schedule": {
-      "filePath": "trips.$tripId.schedule.tsx",
-      "parent": "/trips/$tripId"
-    },
-    "/trips/$tripId/summary": {
-      "filePath": "trips.$tripId.summary.tsx",
-      "parent": "/trips/$tripId"
     }
   }
 }

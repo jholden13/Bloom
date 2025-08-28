@@ -26,13 +26,13 @@ function AddOutreachPage() {
   const form = useForm({
     defaultValues: {
       organizationName: "",
-      organizationWebsite: "",
       contactName: "",
       contactEmail: "",
-      contactTitle: "",
       contactPhone: "",
       outreachDate: new Date().toISOString().split('T')[0],
       notes: "",
+      proposedAddress: "",
+      proposedMeetingTime: "",
     },
     onSubmit: async ({ value }) => {
       setIsSubmitting(true);
@@ -40,7 +40,6 @@ function AddOutreachPage() {
         // Create organization first
         const organizationId = await createOrganization({
           name: value.organizationName,
-          website: value.organizationWebsite || undefined,
         });
 
         // Create contact
@@ -48,7 +47,6 @@ function AddOutreachPage() {
           organizationId,
           name: value.contactName,
           email: value.contactEmail,
-          title: value.contactTitle || undefined,
           phone: value.contactPhone || undefined,
         });
 
@@ -59,6 +57,8 @@ function AddOutreachPage() {
           organizationId,
           outreachDate: value.outreachDate,
           notes: value.notes || undefined,
+          proposedAddress: value.proposedAddress || undefined,
+          proposedMeetingTime: value.proposedMeetingTime || undefined,
         });
 
         void navigate({ to: "/trips/$tripId", params: { tripId } });
@@ -102,58 +102,27 @@ function AddOutreachPage() {
             )}
           </form.Field>
 
-          <form.Field name="organizationWebsite">
-            {(field) => (
-              <fieldset>
-                <legend>Website</legend>
-                <input
-                  className="input w-full"
-                  placeholder="https://company.com"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </fieldset>
-            )}
-          </form.Field>
         </div>
 
         {/* Contact Section */}
         <div className="p-4 bg-base-100 rounded-lg">
           <h3 className="font-semibold mb-4">Contact Person</h3>
           
-          <div className="grid md:grid-cols-2 gap-4">
-            <form.Field name="contactName">
-              {(field) => (
-                <fieldset>
-                  <legend>Contact Name *</legend>
-                  <input
-                    className="input w-full"
-                    placeholder="Full name"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    required
-                  />
-                </fieldset>
-              )}
-            </form.Field>
-
-            <form.Field name="contactTitle">
-              {(field) => (
-                <fieldset>
-                  <legend>Title/Position</legend>
-                  <input
-                    className="input w-full"
-                    placeholder="e.g., CEO, Manager"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </fieldset>
-              )}
-            </form.Field>
-          </div>
+          <form.Field name="contactName">
+            {(field) => (
+              <fieldset className="mb-4">
+                <legend>Contact Name *</legend>
+                <input
+                  className="input w-full"
+                  placeholder="Full name"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                />
+              </fieldset>
+            )}
+          </form.Field>
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <form.Field name="contactEmail">
@@ -210,6 +179,38 @@ function AddOutreachPage() {
               </fieldset>
             )}
           </form.Field>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <form.Field name="proposedAddress">
+              {(field) => (
+                <fieldset>
+                  <legend>Proposed Address</legend>
+                  <input
+                    className="input w-full"
+                    placeholder="Meeting location or address"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </fieldset>
+              )}
+            </form.Field>
+
+            <form.Field name="proposedMeetingTime">
+              {(field) => (
+                <fieldset>
+                  <legend>Proposed Meeting Time</legend>
+                  <input
+                    className="input w-full"
+                    placeholder="e.g., 2:00 PM or afternoon"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </fieldset>
+              )}
+            </form.Field>
+          </div>
 
           <form.Field name="notes">
             {(field) => (
