@@ -201,8 +201,8 @@ function AddOutreachPage() {
                 <fieldset>
                   <legend>Proposed Meeting Time</legend>
                   <input
+                    type="datetime-local"
                     className="input w-full"
-                    placeholder="e.g., 2:00 PM or afternoon"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}

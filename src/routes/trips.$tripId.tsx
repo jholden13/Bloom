@@ -197,73 +197,129 @@ function TripDetailsPage() {
 
         {/* Upcoming Meetings */}
         <div className="not-prose">
-          <h2 className="text-xl font-semibold mb-4">Upcoming Meetings</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Upcoming Meetings</h2>
+            <Link to="/trips/$tripId/meetings-print" params={{ tripId }}>
+              <button className="btn btn-outline btn-sm">
+                <FileText className="w-4 h-4" />
+                Print Schedule
+              </button>
+            </Link>
+          </div>
           {(() => {
             const scheduledMeetings = meetings.filter(m => m.status !== 'cancelled');
             const scheduledOutreach = outreach.filter(o => o.response === 'meeting_scheduled');
-            const totalMeetingItems = scheduledMeetings.length + scheduledOutreach.length;
+            
+            // Create combined list with proper date handling
+            const allMeetingItems = [
+              ...scheduledMeetings.map(meeting => ({
+                type: 'formal',
+                date: meeting.scheduledDate,
+                time: meeting.scheduledTime,
+                sortDateTime: new Date(`${meeting.scheduledDate}T${meeting.scheduledTime}`),
+                ...meeting
+              })),
+              ...scheduledOutreach.map(item => ({
+                type: 'scheduled',
+                date: item.proposedMeetingTime ? new Date(item.proposedMeetingTime).toISOString().split('T')[0] : item.responseDate || item.outreachDate,
+                time: item.proposedMeetingTime ? new Date(item.proposedMeetingTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'TBD',
+                sortDateTime: item.proposedMeetingTime ? new Date(item.proposedMeetingTime) : new Date(item.responseDate || item.outreachDate),
+                ...item
+              }))
+            ];
+
+            // Sort chronologically
+            allMeetingItems.sort((a, b) => a.sortDateTime - b.sortDateTime);
+
+            // Group by date
+            const groupedByDate = allMeetingItems.reduce((groups, item) => {
+              const dateKey = item.date;
+              if (!groups[dateKey]) {
+                groups[dateKey] = [];
+              }
+              groups[dateKey].push(item);
+              return groups;
+            }, {});
+
+            const totalMeetingItems = allMeetingItems.length;
             
             return totalMeetingItems === 0 ? (
               <div className="p-6 bg-base-200 rounded-lg text-center">
                 <p className="opacity-70">No meetings scheduled yet.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Formal Meetings */}
-                {scheduledMeetings.slice(0, 5).map((meeting) => (
-                  <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{meeting.title}</h4>
-                        <p className="text-sm opacity-70">{meeting.organization?.name}</p>
-                        <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          {meeting.scheduledDate} at {meeting.scheduledTime}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs opacity-60">
-                          <MapPin className="w-3 h-3" />
-                          {meeting.address}
-                        </div>
-                      </div>
-                      <div className={`badge ${
-                        meeting.status === 'confirmed' ? 'badge-success' :
-                        meeting.status === 'completed' ? 'badge-info' :
-                        'badge-warning'
-                      }`}>
-                        {meeting.status}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {/* Scheduled Outreach (awaiting formal meeting) */}
-                {scheduledOutreach.map((item) => (
-                  <div key={`outreach-${item._id}`} className="p-4 bg-base-100 rounded-lg border border-success border-dashed">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{item.organization?.name} <span className="text-xs opacity-60">(pending meeting details)</span></h4>
-                        <p className="text-sm opacity-70">{item.contact?.name}</p>
-                        <div className="flex items-center gap-1 text-xs opacity-60 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          Outreach: {item.outreachDate}
-                          {item.responseDate && ` • Response: ${item.responseDate}`}
-                        </div>
-                        {item.proposedAddress && (
-                          <div className="flex items-center gap-1 text-xs opacity-60">
-                            <MapPin className="w-3 h-3" />
-                            Proposed: {item.proposedAddress}
+              <div className="space-y-6">
+                {Object.entries(groupedByDate).map(([date, dayMeetings]) => (
+                  <div key={date}>
+                    {/* Date Header */}
+                    <h3 className="text-lg font-semibold mb-3 pb-2 border-b border-base-300">
+                      {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </h3>
+                    
+                    {/* Meetings for this day */}
+                    <div className="space-y-3">
+                      {dayMeetings.map((item) => (
+                        <div 
+                          key={item.type === 'formal' ? item._id : `outreach-${item._id}`} 
+                          className={`p-5 rounded-lg ${
+                            item.type === 'formal' ? 'bg-base-100' : 'bg-base-100 border border-success border-dashed'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg mb-2">
+                                {item.type === 'formal' ? item.title : item.organization?.name}
+                                {item.type === 'scheduled' && (
+                                  <span className="text-sm font-normal opacity-60 ml-2">(pending details)</span>
+                                )}
+                              </h4>
+                              
+                              <p className="text-base opacity-80 mb-3">{item.organization?.name || item.contact?.name}</p>
+                              
+                              {/* Large formatted date/time/address */}
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-5 h-5 text-primary" />
+                                  <span className="text-lg font-medium">{item.time}</span>
+                                </div>
+                                
+                                {(item.address || item.proposedAddress) && (
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-primary" />
+                                    <span className="text-lg font-medium">
+                                      {item.address || item.proposedAddress}
+                                      {item.type === 'scheduled' && item.proposedAddress && (
+                                        <span className="text-sm font-normal opacity-60 ml-2">(proposed)</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {item.type === 'scheduled' && !item.proposedMeetingTime && (
+                                <p className="text-sm opacity-60 mt-2">
+                                  Meeting scheduled but time/details pending
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className={`badge badge-lg ${
+                              item.type === 'formal' ? (
+                                item.status === 'confirmed' ? 'badge-success' :
+                                item.status === 'completed' ? 'badge-info' :
+                                'badge-warning'
+                              ) : 'badge-success'
+                            }`}>
+                              {item.type === 'formal' ? item.status : 'meeting scheduled'}
+                            </div>
                           </div>
-                        )}
-                        {item.proposedMeetingTime && (
-                          <div className="flex items-center gap-1 text-xs opacity-60">
-                            <Calendar className="w-3 h-3" />
-                            Proposed time: {item.proposedMeetingTime}
-                          </div>
-                        )}
-                      </div>
-                      <div className="badge badge-success">
-                        meeting scheduled
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

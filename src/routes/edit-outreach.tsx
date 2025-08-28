@@ -26,6 +26,8 @@ function EditOutreachPage() {
   
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, {}));
   const updateOutreach = useMutation(api.outreach.update);
+  const updateContact = useMutation(api.contacts.update);
+  const updateOrganization = useMutation(api.organizations.update);
 
   const currentOutreach = outreach.find(item => item._id === id);
 
@@ -35,6 +37,14 @@ function EditOutreachPage() {
 
   const form = useForm({
     defaultValues: {
+      // Organization fields
+      organizationName: currentOutreach.organization?.name || "",
+      organizationNotes: currentOutreach.organization?.notes || "",
+      // Contact fields
+      contactName: currentOutreach.contact?.name || "",
+      contactEmail: currentOutreach.contact?.email || "",
+      contactPhone: currentOutreach.contact?.phone || "",
+      // Outreach fields
       notes: currentOutreach.notes || "",
       proposedAddress: currentOutreach.proposedAddress || "",
       proposedMeetingTime: currentOutreach.proposedMeetingTime || "",
@@ -42,6 +52,26 @@ function EditOutreachPage() {
     onSubmit: async ({ value }) => {
       setIsSubmitting(true);
       try {
+        // Update organization
+        if (currentOutreach.organization) {
+          await updateOrganization({
+            id: currentOutreach.organizationId as any,
+            name: value.organizationName || undefined,
+            notes: value.organizationNotes || undefined,
+          });
+        }
+
+        // Update contact
+        if (currentOutreach.contact) {
+          await updateContact({
+            id: currentOutreach.contactId as any,
+            name: value.contactName || undefined,
+            email: value.contactEmail || undefined,
+            phone: value.contactPhone || undefined,
+          });
+        }
+
+        // Update outreach
         await updateOutreach({
           id: id as any,
           notes: value.notes || undefined,
@@ -76,9 +106,6 @@ function EditOutreachPage() {
         <div className="p-4 bg-base-200 rounded-lg">
           <h3 className="font-semibold mb-2">Current Information</h3>
           <div className="text-sm space-y-1">
-            <p><strong>Organization:</strong> {currentOutreach.organization?.name}</p>
-            <p><strong>Contact:</strong> {currentOutreach.contact?.name}</p>
-            <p><strong>Email:</strong> {currentOutreach.contact?.email}</p>
             <p><strong>Outreach Date:</strong> {currentOutreach.outreachDate}</p>
             <p><strong>Status:</strong> 
               <span className={`badge badge-sm ml-2 ${
@@ -93,9 +120,101 @@ function EditOutreachPage() {
           </div>
         </div>
 
-        {/* Editable Fields */}
+        {/* Organization Section */}
         <div className="p-4 bg-base-100 rounded-lg">
-          <h3 className="font-semibold mb-4">Update Details</h3>
+          <h3 className="font-semibold mb-4">Organization Details</h3>
+          
+          <form.Field name="organizationName">
+            {(field) => (
+              <fieldset className="mb-4">
+                <legend>Organization Name *</legend>
+                <input
+                  className="input w-full"
+                  placeholder="Company or organization name"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                />
+              </fieldset>
+            )}
+          </form.Field>
+
+          <form.Field name="organizationNotes">
+            {(field) => (
+              <fieldset>
+                <legend>Organization Notes</legend>
+                <textarea
+                  className="textarea w-full"
+                  placeholder="Notes about the organization..."
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                />
+              </fieldset>
+            )}
+          </form.Field>
+        </div>
+
+        {/* Contact Section */}
+        <div className="p-4 bg-base-100 rounded-lg">
+          <h3 className="font-semibold mb-4">Contact Person</h3>
+          
+          <form.Field name="contactName">
+            {(field) => (
+              <fieldset className="mb-4">
+                <legend>Contact Name *</legend>
+                <input
+                  className="input w-full"
+                  placeholder="Full name"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  required
+                />
+              </fieldset>
+            )}
+          </form.Field>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <form.Field name="contactEmail">
+              {(field) => (
+                <fieldset>
+                  <legend>Email Address *</legend>
+                  <input
+                    type="email"
+                    className="input w-full"
+                    placeholder="contact@company.com"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    required
+                  />
+                </fieldset>
+              )}
+            </form.Field>
+
+            <form.Field name="contactPhone">
+              {(field) => (
+                <fieldset>
+                  <legend>Phone Number</legend>
+                  <input
+                    type="tel"
+                    className="input w-full"
+                    placeholder="+1 555-123-4567"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </fieldset>
+              )}
+            </form.Field>
+          </div>
+        </div>
+
+        {/* Meeting Details Section */}
+        <div className="p-4 bg-base-100 rounded-lg">
+          <h3 className="font-semibold mb-4">Meeting Details</h3>
           
           <div className="grid md:grid-cols-2 gap-4 mb-4">
             <form.Field name="proposedAddress">
@@ -118,8 +237,8 @@ function EditOutreachPage() {
                 <fieldset>
                   <legend>Proposed Meeting Time</legend>
                   <input
+                    type="datetime-local"
                     className="input w-full"
-                    placeholder="e.g., 2:00 PM or afternoon"
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
