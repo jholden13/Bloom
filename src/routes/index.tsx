@@ -77,8 +77,8 @@ function TripsDashboard() {
                     {trip.description && (
                       <p className="text-sm opacity-70 mb-2">{trip.description}</p>
                     )}
-                    <div className="flex items-center gap-2 text-sm opacity-60">
-                      <Calendar className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-xl text-red-500 font-bold">
+                      <Calendar className="w-5 h-5" />
                       {trip.startDate || 'No dates set'}
                     </div>
                   </Link>

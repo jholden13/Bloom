@@ -28,15 +28,8 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/print-meetings")({
   validateSearch: searchSchema,
-  loader: async ({ context: { queryClient }, search }) => {
-    const tripId = search?.tripId;
-    if (tripId) {
-      await Promise.all([
-        queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
-        queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
-        queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId })),
-      ]);
-    }
+  loader: async ({ context: { queryClient } }) => {
+    // Loader removed since we can't access search params here
   },
   component: MeetingsPrintPage,
 });
@@ -49,9 +42,9 @@ function MeetingsPrintPage() {
     return <div>Missing trip ID parameter</div>;
   }
   
-  const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId }));
-  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
-  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId }));
+  const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
+  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
+  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
 
   if (!trip) {
     return <div>Trip not found</div>;
@@ -84,10 +77,10 @@ function MeetingsPrintPage() {
   ];
 
   // Sort chronologically
-  allMeetingItems.sort((a, b) => a.sortDateTime - b.sortDateTime);
+  allMeetingItems.sort((a, b) => a.sortDateTime.getTime() - b.sortDateTime.getTime());
 
   // Group by date
-  const groupedByDate = allMeetingItems.reduce((groups, item) => {
+  const groupedByDate = allMeetingItems.reduce((groups: Record<string, any[]>, item) => {
     const dateKey = item.date;
     if (!groups[dateKey]) {
       groups[dateKey] = [];
@@ -165,7 +158,7 @@ function MeetingsPrintPage() {
             <p className="text-center py-8 opacity-70">No meetings scheduled.</p>
           ) : (
             <div className="space-y-8">
-              {Object.entries(groupedByDate).map(([date, dayMeetings]) => (
+              {Object.entries(groupedByDate).map(([date, dayMeetings]: [string, any[]]) => (
                 <div key={date}>
                   {/* Date Header */}
                   <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-gray-300">
@@ -179,7 +172,7 @@ function MeetingsPrintPage() {
                   
                   {/* Meetings for this day */}
                   <div className="space-y-4">
-                    {dayMeetings.map((item, index) => (
+                    {dayMeetings.map((item: any, index: number) => (
                       <div 
                         key={item.type === 'formal' ? item._id : `outreach-${item._id}`}
                         className="meeting-item border rounded-lg p-4"

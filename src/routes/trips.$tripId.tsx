@@ -26,10 +26,10 @@ const formatAddress = (item: any) => {
 export const Route = createFileRoute("/trips/$tripId")({
   loader: async ({ context: { queryClient }, params: { tripId } }) => {
     await Promise.all([
-      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
-      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.getSummary, { tripId })),
+      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.outreach.getSummary, { tripId: tripId as any })),
     ]);
   },
   component: TripDetailsPage,
@@ -43,10 +43,10 @@ function TripDetailsPage() {
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   
-  const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId }));
-  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId }));
-  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId }));
-  const { data: summary } = useSuspenseQuery(convexQuery(api.outreach.getSummary, { tripId }));
+  const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
+  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
+  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
+  const { data: summary } = useSuspenseQuery(convexQuery(api.outreach.getSummary, { tripId: tripId as any }));
   
   const deleteOutreach = useMutation(api.outreach.deleteOutreach);
   const updateOutreachResponse = useMutation(api.outreach.updateResponse);
@@ -154,8 +154,8 @@ function TripDetailsPage() {
             <h1>{trip.name}</h1>
             {trip.description && <p className="text-lg opacity-80">{trip.description}</p>}
             {trip.startDate && (
-              <div className="not-prose flex items-center justify-center gap-2 text-sm opacity-60 mt-2">
-                <Calendar className="w-4 h-4" />
+              <div className="not-prose flex items-center justify-center gap-2 text-2xl text-red-500 font-bold mt-2">
+                <Calendar className="w-6 h-6" />
                 {trip.startDate} {trip.endDate && `- ${trip.endDate}`}
               </div>
             )}
@@ -366,10 +366,10 @@ function TripDetailsPage() {
             ];
 
             // Sort chronologically
-            allMeetingItems.sort((a, b) => a.sortDateTime - b.sortDateTime);
+            allMeetingItems.sort((a, b) => a.sortDateTime.getTime() - b.sortDateTime.getTime());
 
             // Group by date
-            const groupedByDate = allMeetingItems.reduce((groups, item) => {
+            const groupedByDate = allMeetingItems.reduce((groups: Record<string, any[]>, item) => {
               const dateKey = item.date;
               if (!groups[dateKey]) {
                 groups[dateKey] = [];
@@ -386,7 +386,7 @@ function TripDetailsPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {Object.entries(groupedByDate).map(([date, dayMeetings]) => (
+                {Object.entries(groupedByDate).map(([date, dayMeetings]: [string, any[]]) => (
                   <div key={date}>
                     {/* Date Header */}
                     <h3 className="text-lg font-semibold mb-3 pb-2 border-b border-base-300">
@@ -400,7 +400,7 @@ function TripDetailsPage() {
                     
                     {/* Meetings for this day */}
                     <div className="space-y-3">
-                      {dayMeetings.map((item) => (
+                      {dayMeetings.map((item: any) => (
                         <div 
                           key={item.type === 'formal' ? item._id : `outreach-${item._id}`} 
                           className={`p-5 rounded-lg ${
