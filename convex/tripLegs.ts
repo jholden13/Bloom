@@ -26,6 +26,8 @@ export const create = mutation({
       v.literal("other")
     ),
     date: v.optional(v.string()),
+    time: v.optional(v.string()),
+    reservationNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -57,6 +59,8 @@ export const update = mutation({
       v.literal("other")
     )),
     date: v.optional(v.string()),
+    time: v.optional(v.string()),
+    reservationNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

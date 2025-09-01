@@ -132,6 +132,7 @@ export const get = query({
   },
 });
 
+
 export const update = mutation({
   args: {
     id: v.id("meetings"),
