@@ -350,7 +350,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
               <button onClick={() => setShowAddLegForm(false)} className="btn btn-ghost btn-sm">
                 Cancel
               </button>
-              <button onClick={handleAddLeg} className="btn btn-primary btn-sm">
+              <button onClick={() => void handleAddLeg()} className="btn btn-primary btn-sm">
                 Add Leg
               </button>
             </div>
@@ -419,7 +419,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
               <button onClick={() => setShowAddLodgingForm(false)} className="btn btn-ghost btn-sm">
                 Cancel
               </button>
-              <button onClick={handleAddLodging} className="btn btn-primary btn-sm">
+              <button onClick={() => void handleAddLodging()} className="btn btn-primary btn-sm">
                 Add Lodging
               </button>
             </div>
@@ -429,7 +429,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
 
       {/* Trip Days */}
       <div className="space-y-4">
-        {organizedDays.map((day, dayIndex) => (
+        {organizedDays.map((day) => (
           <div key={day.date} className="border-l-2 border-primary pl-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-4 h-4 bg-primary rounded-full -ml-[9px]"></div>
@@ -571,7 +571,7 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
           <button onClick={onCancel} className="btn btn-ghost btn-xs">
             Cancel
           </button>
-          <button onClick={handleSave} className="btn btn-primary btn-xs">
+          <button onClick={() => void handleSave()} className="btn btn-primary btn-xs">
             Save
           </button>
         </div>
@@ -698,7 +698,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
           <button onClick={onCancel} className="btn btn-ghost btn-xs">
             Cancel
           </button>
-          <button onClick={handleSave} className="btn btn-primary btn-xs">
+          <button onClick={() => void handleSave()} className="btn btn-primary btn-xs">
             Save
           </button>
         </div>
@@ -754,338 +754,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
   );
 }
 
-// Old components removed - functionality moved to TripItinerarySection
-
-function MeetingsSection({ meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
-  const outreachCounts = {
-  const deleteLeg = useMutation(api.tripLegs.remove);
-
-  const handleAddLeg = async () => {
-    if (!newLeg.startCity || !newLeg.endCity) return;
-    
-    await createLeg({
-      tripId: tripId as any,
-      ...newLeg,
-      date: newLeg.date || undefined,
-      notes: newLeg.notes || undefined,
-    });
-    
-    setNewLeg({ startCity: "", endCity: "", transportation: "flight", date: "", notes: "" });
-    setShowAddForm(false);
-  };
-
-  const handleDeleteLeg = async (legId: string) => {
-    if (confirm("Are you sure you want to delete this travel leg?")) {
-      await deleteLeg({ id: legId as any });
-    }
-  };
-
-  return (
-    <div className="not-prose">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Travel Legs</h2>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn btn-primary btn-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Leg
-        </button>
-      </div>
-
-      {showAddForm && (
-        <div className="card bg-base-100 shadow mb-4">
-          <div className="card-body">
-            <h3 className="card-title">Add Travel Leg</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input"
-                  placeholder="Start City"
-                  value={newLeg.startCity}
-                  onChange={(e) => setNewLeg({ ...newLeg, startCity: e.target.value })}
-                />
-                <input
-                  className="input"
-                  placeholder="End City"
-                  value={newLeg.endCity}
-                  onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
-                />
-              </div>
-              <select
-                className="select w-full"
-                value={newLeg.transportation}
-                onChange={(e) => setNewLeg({ ...newLeg, transportation: e.target.value as any })}
-              >
-                <option value="flight">Flight</option>
-                <option value="train">Train</option>
-                <option value="car">Car</option>
-                <option value="bus">Bus</option>
-                <option value="boat">Boat</option>
-                <option value="other">Other</option>
-              </select>
-              <input
-                type="date"
-                className="input"
-                placeholder="Date"
-                value={newLeg.date}
-                onChange={(e) => setNewLeg({ ...newLeg, date: e.target.value })}
-              />
-              <textarea
-                className="textarea"
-                placeholder="Notes (optional)"
-                value={newLeg.notes}
-                onChange={(e) => setNewLeg({ ...newLeg, notes: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="card-actions justify-end">
-              <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
-                Cancel
-              </button>
-              <button onClick={handleAddLeg} className="btn btn-primary btn-sm">
-                Add Leg
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {legs.length === 0 ? (
-        <div className="p-6 bg-base-200 rounded-lg text-center">
-          <p className="opacity-70">No travel legs added yet.</p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="btn btn-primary btn-sm mt-2"
-          >
-            Add First Leg
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {legs
-            .sort((a, b) => a.order - b.order)
-            .map((leg, index) => {
-              const IconComponent = transportationIcons[leg.transportation];
-              return (
-                <div key={leg._id} className="p-4 bg-base-100 rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="badge badge-neutral badge-sm">Leg {index + 1}</div>
-                        <IconComponent className="w-4 h-4 text-primary" />
-                        <span className="text-sm capitalize">{leg.transportation}</span>
-                      </div>
-                      <h4 className="font-medium text-lg">
-                        {leg.startCity} → {leg.endCity}
-                      </h4>
-                      {leg.date && (
-                        <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
-                          <Calendar className="w-3 h-3" />
-                          {leg.date}
-                        </div>
-                      )}
-                      {leg.notes && (
-                        <p className="text-sm opacity-70 mt-1">{leg.notes}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteLeg(leg._id)}
-                      className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                      title="Delete leg"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LodgingSection({ tripId, lodging }: { tripId: string; lodging: any[] }) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newLodging, setNewLodging] = useState({
-    date: "",
-    name: "",
-    address: "",
-    city: "",
-    checkIn: "",
-    checkOut: "",
-    notes: "",
-  });
-
-  const createLodging = useMutation(api.lodging.create);
-  const deleteLodging = useMutation(api.lodging.remove);
-
-  const handleAddLodging = async () => {
-    if (!newLodging.date || !newLodging.name) return;
-    
-    await createLodging({
-      tripId: tripId as any,
-      ...newLodging,
-      address: newLodging.address || undefined,
-      city: newLodging.city || undefined,
-      checkIn: newLodging.checkIn || undefined,
-      checkOut: newLodging.checkOut || undefined,
-      notes: newLodging.notes || undefined,
-    });
-    
-    setNewLodging({ date: "", name: "", address: "", city: "", checkIn: "", checkOut: "", notes: "" });
-    setShowAddForm(false);
-  };
-
-  const handleDeleteLodging = async (lodgingId: string) => {
-    if (confirm("Are you sure you want to delete this lodging?")) {
-      await deleteLodging({ id: lodgingId as any });
-    }
-  };
-
-  return (
-    <div className="not-prose">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Lodging</h2>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn btn-primary btn-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Lodging
-        </button>
-      </div>
-
-      {showAddForm && (
-        <div className="card bg-base-100 shadow mb-4">
-          <div className="card-body">
-            <h3 className="card-title">Add Lodging</h3>
-            <div className="space-y-3">
-              <input
-                type="date"
-                className="input"
-                placeholder="Date"
-                value={newLodging.date}
-                onChange={(e) => setNewLodging({ ...newLodging, date: e.target.value })}
-              />
-              <input
-                className="input"
-                placeholder="Hotel/Lodging Name"
-                value={newLodging.name}
-                onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input"
-                  placeholder="Address"
-                  value={newLodging.address}
-                  onChange={(e) => setNewLodging({ ...newLodging, address: e.target.value })}
-                />
-                <input
-                  className="input"
-                  placeholder="City"
-                  value={newLodging.city}
-                  onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="time"
-                  className="input"
-                  placeholder="Check-in Time"
-                  value={newLodging.checkIn}
-                  onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
-                />
-                <input
-                  type="time"
-                  className="input"
-                  placeholder="Check-out Time"
-                  value={newLodging.checkOut}
-                  onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
-                />
-              </div>
-              <textarea
-                className="textarea"
-                placeholder="Notes (optional)"
-                value={newLodging.notes}
-                onChange={(e) => setNewLodging({ ...newLodging, notes: e.target.value })}
-                rows={2}
-              />
-            </div>
-            <div className="card-actions justify-end">
-              <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
-                Cancel
-              </button>
-              <button onClick={handleAddLodging} className="btn btn-primary btn-sm">
-                Add Lodging
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {lodging.length === 0 ? (
-        <div className="p-6 bg-base-200 rounded-lg text-center">
-          <p className="opacity-70">No lodging added yet.</p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="btn btn-primary btn-sm mt-2"
-          >
-            Add First Lodging
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {lodging
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-            .map((stay) => (
-              <div key={stay._id} className="p-4 bg-base-100 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Hotel className="w-4 h-4 text-primary" />
-                      <h4 className="font-medium text-lg">{stay.name}</h4>
-                    </div>
-                    <div className="space-y-1 text-sm opacity-70">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {stay.date}
-                      </div>
-                      {stay.city && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {stay.address ? `${stay.address}, ${stay.city}` : stay.city}
-                        </div>
-                      )}
-                      {(stay.checkIn || stay.checkOut) && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {stay.checkIn && `Check-in: ${stay.checkIn}`}
-                          {stay.checkIn && stay.checkOut && " | "}
-                          {stay.checkOut && `Check-out: ${stay.checkOut}`}
-                        </div>
-                      )}
-                      {stay.notes && <p className="mt-1">{stay.notes}</p>}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteLodging(stay._id)}
-                    className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                    title="Delete lodging"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MeetingsSection({ meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
+function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
   const outreachCounts = {
     pending: outreach.filter(o => o.response === "pending").length,
     interested: outreach.filter(o => o.response === "interested").length,
