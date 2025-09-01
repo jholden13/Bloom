@@ -17,25 +17,49 @@ export const Route = createFileRoute("/meetings")({
   loader: async ({ context: { queryClient }, search }) => {
     const tripId = search.tripId;
     
-    const [trip, meetings, outreach] = await Promise.all([
-      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
-      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
-    ]);
+    if (!tripId) {
+      throw new Error("Trip ID is required");
+    }
+    
+    try {
+      const [trip, meetings, outreach] = await Promise.all([
+        queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
+        queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
+        queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
+      ]);
 
-    return { trip, meetings, outreach };
+      return { trip, meetings, outreach };
+    } catch (error) {
+      console.error("Error loading meetings data:", error);
+      throw error;
+    }
   },
 });
 
 function MeetingsPage() {
-  const { tripId } = Route.useSearch();
+  const search = Route.useSearch();
+  console.log("Search object:", search);
+  const tripId = search.tripId;
+  console.log("Trip ID:", tripId);
   
+  if (!tripId) {
+    return (
+      <div className="prose prose-invert max-w-none">
+        <div className="alert alert-error">
+          <h3>Missing Trip ID</h3>
+          <p>No trip ID provided. Please navigate from a specific trip page.</p>
+          <Link to="/" className="btn btn-primary">Go to Home</Link>
+        </div>
+      </div>
+    );
+  }
+
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
   const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
 
   if (!trip) {
-    return <div>Loading...</div>;
+    return <div>Trip not found...</div>;
   }
 
   return (
