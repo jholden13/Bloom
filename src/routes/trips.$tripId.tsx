@@ -170,8 +170,7 @@ function TripDetailsPage() {
                     </div>
                   </div>
                   <Link 
-                    to="/trips/$tripId/meetings" 
-                    params={{ tripId }}
+                    to={`/trips/${tripId}/meetings`}
                     className="btn btn-primary btn-sm w-full no-underline"
                   >
                     <Users className="w-4 h-4" />
