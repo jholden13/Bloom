@@ -5,24 +5,30 @@ import { useMutation } from "convex/react";
 import { useState } from "react";
 import { Calendar, MapPin, Plus, Pencil, Users, ArrowLeft } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import { z } from "zod";
 
-export const Route = createFileRoute("/trips/$tripId/meetings")({
-  component: TripMeetingsPage,
-  loader: async ({ context: { queryClient }, params }) => {
-    const tripId = params.tripId as any;
+const meetingsSearchSchema = z.object({
+  tripId: z.string(),
+});
+
+export const Route = createFileRoute("/meetings")({
+  component: MeetingsPage,
+  validateSearch: meetingsSearchSchema,
+  loader: async ({ context: { queryClient }, search }) => {
+    const tripId = search.tripId;
     
     const [trip, meetings, outreach] = await Promise.all([
-      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId })),
-      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId })),
+      queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
     ]);
 
     return { trip, meetings, outreach };
   },
 });
 
-function TripMeetingsPage() {
-  const { tripId } = Route.useParams();
+function MeetingsPage() {
+  const { tripId } = Route.useSearch();
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
   const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));

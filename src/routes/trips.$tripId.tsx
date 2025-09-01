@@ -171,7 +171,7 @@ function TripDetailsPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => navigate({ to: "/trips/$tripId/meetings", params: { tripId } })}
+                    onClick={() => navigate({ to: "/meetings", search: { tripId } })}
                     className="btn btn-primary btn-sm w-full"
                   >
                     <Users className="w-4 h-4" />
