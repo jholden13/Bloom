@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Edit, Pencil, Hotel, Clock } from "lucide-react";
+import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Pencil, Hotel, Clock, Users } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 const transportationIcons: Record<string, React.ComponentType<any>> = {
@@ -21,6 +21,8 @@ export const Route = createFileRoute("/trips/$tripId")({
       queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
       queryClient.ensureQueryData(convexQuery(api.tripLegs.list, { tripId: tripId as any })),
       queryClient.ensureQueryData(convexQuery(api.lodging.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
     ]);
   },
   component: TripDetailsPage,
@@ -37,6 +39,8 @@ function TripDetailsPage() {
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
   const { data: tripLegs } = useSuspenseQuery(convexQuery(api.tripLegs.list, { tripId: tripId as any }));
   const { data: lodging } = useSuspenseQuery(convexQuery(api.lodging.list, { tripId: tripId as any }));
+  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
+  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
   
   const updateTrip = useMutation(api.trips.update);
 
@@ -144,9 +148,10 @@ function TripDetailsPage() {
         )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
         <TravelLegsSection tripId={tripId} legs={tripLegs} />
         <LodgingSection tripId={tripId} lodging={lodging} />
+        <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} />
       </div>
     </div>
   );
@@ -484,6 +489,194 @@ function LodgingSection({ tripId, lodging }: { tripId: string; lodging: any[] })
                 </div>
               </div>
             ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MeetingsSection({ meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
+  const outreachCounts = {
+    pending: outreach.filter(o => o.response === "pending").length,
+    interested: outreach.filter(o => o.response === "interested").length,
+    not_interested: outreach.filter(o => o.response === "not_interested").length,
+    no_response: outreach.filter(o => o.response === "no_response").length,
+    meeting_scheduled: outreach.filter(o => o.response === "meeting_scheduled").length,
+  };
+
+  return (
+    <div className="not-prose">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Meetings & Outreach</h2>
+      </div>
+
+      {/* Outreach Status Bar */}
+      {outreach.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium mb-2">Outreach Status</h3>
+          <div className="flex rounded-lg overflow-hidden h-2">
+            {outreachCounts.pending > 0 && (
+              <div 
+                className="bg-warning" 
+                style={{ width: `${(outreachCounts.pending / outreach.length) * 100}%` }}
+                title={`${outreachCounts.pending} pending`}
+              />
+            )}
+            {outreachCounts.interested > 0 && (
+              <div 
+                className="bg-info" 
+                style={{ width: `${(outreachCounts.interested / outreach.length) * 100}%` }}
+                title={`${outreachCounts.interested} interested`}
+              />
+            )}
+            {outreachCounts.not_interested > 0 && (
+              <div 
+                className="bg-neutral" 
+                style={{ width: `${(outreachCounts.not_interested / outreach.length) * 100}%` }}
+                title={`${outreachCounts.not_interested} not interested`}
+              />
+            )}
+            {outreachCounts.no_response > 0 && (
+              <div 
+                className="bg-error" 
+                style={{ width: `${(outreachCounts.no_response / outreach.length) * 100}%` }}
+                title={`${outreachCounts.no_response} no response`}
+              />
+            )}
+            {outreachCounts.meeting_scheduled > 0 && (
+              <div 
+                className="bg-success" 
+                style={{ width: `${(outreachCounts.meeting_scheduled / outreach.length) * 100}%` }}
+                title={`${outreachCounts.meeting_scheduled} meeting scheduled`}
+              />
+            )}
+          </div>
+          <div className="flex justify-between text-xs mt-1 opacity-70">
+            <span>Pending: {outreachCounts.pending}</span>
+            <span>Interested: {outreachCounts.interested}</span>
+            <span>Not Interested: {outreachCounts.not_interested}</span>
+            <span>No Response: {outreachCounts.no_response}</span>
+            <span>Meeting Scheduled: {outreachCounts.meeting_scheduled}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Meetings List */}
+      {meetings.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Meetings</h3>
+          <div className="space-y-3">
+            {meetings.map((meeting) => (
+              <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      <h4 className="font-medium text-lg">{meeting.title}</h4>
+                      <div className={`badge badge-sm ${
+                        meeting.status === 'scheduled' ? 'badge-warning' :
+                        meeting.status === 'confirmed' ? 'badge-info' :
+                        meeting.status === 'completed' ? 'badge-success' :
+                        'badge-error'
+                      }`}>
+                        {meeting.status}
+                      </div>
+                    </div>
+                    <div className="space-y-1 text-sm opacity-70">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {meeting.scheduledDate} at {meeting.scheduledTime}
+                        {meeting.duration && ` (${meeting.duration} min)`}
+                      </div>
+                      {meeting.address && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {meeting.address}
+                          {meeting.city && `, ${meeting.city}`}
+                        </div>
+                      )}
+                      {meeting.contact && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {meeting.contact.name} ({meeting.contact.email})
+                          {meeting.organization && ` • ${meeting.organization.name}`}
+                        </div>
+                      )}
+                      {meeting.notes && <p className="mt-1">{meeting.notes}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Outreach List */}
+      {outreach.length > 0 && (
+        <div>
+          <h3 className="text-lg font-medium mb-3">Outreach</h3>
+          <div className="space-y-3">
+            {outreach.map((item) => (
+              <div key={item._id} className="p-4 bg-base-100 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`badge badge-sm ${
+                        item.response === 'pending' ? 'badge-warning' :
+                        item.response === 'interested' ? 'badge-info' :
+                        item.response === 'not_interested' ? 'badge-neutral' :
+                        item.response === 'no_response' ? 'badge-error' :
+                        'badge-success'
+                      }`}>
+                        {item.response.replace('_', ' ')}
+                      </div>
+                      {item.contact && (
+                        <>
+                          <h4 className="font-medium text-lg">{item.contact.name}</h4>
+                          {item.organization && <span className="opacity-70">• {item.organization.name}</span>}
+                        </>
+                      )}
+                    </div>
+                    <div className="space-y-1 text-sm opacity-70">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Outreach: {item.outreachDate}
+                        {item.responseDate && ` • Response: ${item.responseDate}`}
+                      </div>
+                      {item.contact?.email && (
+                        <div className="flex items-center gap-1">
+                          <span>📧</span>
+                          {item.contact.email}
+                        </div>
+                      )}
+                      {item.contact?.phone && (
+                        <div className="flex items-center gap-1">
+                          <span>📞</span>
+                          {item.contact.phone}
+                        </div>
+                      )}
+                      {item.proposedAddress && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          Proposed: {item.proposedAddress}
+                          {item.proposedCity && `, ${item.proposedCity}`}
+                        </div>
+                      )}
+                      {item.notes && <p className="mt-1">{item.notes}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty States */}
+      {meetings.length === 0 && outreach.length === 0 && (
+        <div className="p-6 bg-base-200 rounded-lg text-center">
+          <p className="opacity-70">No meetings or outreach found for this trip.</p>
         </div>
       )}
     </div>
