@@ -30,31 +30,25 @@ export const Route = createFileRoute("/trips/$tripId")({
 
 function TripDetailsPage() {
   const { tripId } = Route.useParams();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
   const { data: tripLegs } = useSuspenseQuery(convexQuery(api.tripLegs.list, { tripId: tripId as any }));
   const { data: lodging } = useSuspenseQuery(convexQuery(api.lodging.list, { tripId: tripId as any }));
   const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
-  
-  const updateTrip = useMutation(api.trips.update);
 
-  if (trip && !isEditing && !editName) {
-    setEditName(trip.name || "");
-    setEditDescription(trip.description || "");
-    setEditStartDate(trip.startDate || "");
-    setEditEndDate(trip.endDate || "");
-  }
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(trip?.name || "");
+  const [editDescription, setEditDescription] = useState(trip?.description || "");
+  const [editStartDate, setEditStartDate] = useState(trip?.startDate || "");
+  const [editEndDate, setEditEndDate] = useState(trip?.endDate || "");
+
+  const updateTrip = useMutation(api.trips.update);
 
   const handleSaveTrip = async () => {
     await updateTrip({
       id: tripId as any,
-      name: editName || undefined,
+      name: editName,
       description: editDescription || undefined,
       startDate: editStartDate || undefined,
       endDate: editEndDate || undefined,
@@ -71,12 +65,12 @@ function TripDetailsPage() {
   };
 
   if (!trip) {
-    return <div>Trip not found</div>;
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
+    <div className="prose prose-invert max-w-none">
+      <div className="text-center mb-8">
         {isEditing ? (
           <div className="not-prose space-y-4 max-w-2xl mx-auto">
             <div className="space-y-2">
@@ -127,19 +121,26 @@ function TripDetailsPage() {
             </div>
           </div>
         ) : (
-          <div className="relative">
-            <h1>{trip.name}</h1>
-            {trip.description && <p className="text-lg opacity-80">{trip.description}</p>}
-            {trip.startDate && (
-              <div className="not-prose flex items-center justify-center gap-2 text-2xl text-red-500 font-bold mt-2">
-                <Calendar className="w-6 h-6" />
-                {trip.startDate} {trip.endDate && `- ${trip.endDate}`}
+          <div>
+            <h1 className="text-4xl font-bold mb-2">{trip.name}</h1>
+            {trip.description && (
+              <p className="text-xl text-base-content/70 mb-4">{trip.description}</p>
+            )}
+            {(trip.startDate || trip.endDate) && (
+              <div className="text-lg mb-4 space-x-2">
+                {trip.startDate && <span className="bg-red-600 text-white px-3 py-1 rounded-full text-lg font-bold">{trip.startDate}</span>}
+                {trip.startDate && trip.endDate && <span>to</span>}
+                {trip.endDate && <span className="bg-red-600 text-white px-3 py-1 rounded-full text-lg font-bold">{trip.endDate}</span>}
               </div>
             )}
-            
+          </div>
+        )}
+        
+        {!isEditing && (
+          <div className="flex justify-center">
             <button
               onClick={() => setIsEditing(true)}
-              className="absolute top-0 right-0 btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm"
               title="Edit trip details"
             >
               <Pencil className="w-4 h-4" />
@@ -148,12 +149,46 @@ function TripDetailsPage() {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3">
           <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
         </div>
         <div className="lg:col-span-1">
-          <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} />
+          <div className="not-prose">
+            <div className="card bg-base-100 shadow">
+              <div className="card-body">
+                <h3 className="card-title text-lg">Meetings & Outreach</h3>
+                <div className="space-y-3">
+                  <div className="stats stats-vertical text-xs">
+                    <div className="stat py-2">
+                      <div className="stat-title text-xs">Meetings</div>
+                      <div className="stat-value text-lg">{meetings.length}</div>
+                    </div>
+                    <div className="stat py-2">
+                      <div className="stat-title text-xs">Outreach</div>
+                      <div className="stat-value text-lg">{outreach.length}</div>
+                    </div>
+                  </div>
+                  <Link 
+                    to="/trips/$tripId/meetings" 
+                    params={{ tripId }}
+                    className="btn btn-primary btn-sm w-full no-underline"
+                  >
+                    <Users className="w-4 h-4" />
+                    Manage Meetings
+                  </Link>
+                  <Link 
+                    to="/add-outreach" 
+                    search={{ tripId }} 
+                    className="btn btn-outline btn-sm w-full no-underline"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Outreach
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -181,7 +216,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
     reservationNumber: "",
     notes: "",
   });
-  
+
   const [newLodging, setNewLodging] = useState({
     date: "",
     name: "",
@@ -199,27 +234,18 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
   const updateLodging = useMutation(api.lodging.update);
   const deleteLodging = useMutation(api.lodging.remove);
 
-  // Generate all days of the trip
-  const generateTripDays = () => {
-    const days = [];
-    const startDate = tripStartDate ? new Date(tripStartDate) : null;
-    const endDate = tripEndDate ? new Date(tripEndDate) : null;
+  const getTripDays = () => {
+    if (!tripStartDate || !tripEndDate) return [];
     
-    if (!startDate || !endDate) {
-      // If no trip dates, create days based on existing legs and lodging
-      const allDates = [
-        ...legs.filter(leg => leg.date).map(leg => leg.date),
-        ...lodging.map(stay => stay.date)
-      ];
-      const uniqueDates = [...new Set(allDates)].sort();
-      return uniqueDates.map(date => ({ date, items: [] }));
-    }
-
-    const current = new Date(startDate);
-    while (current <= endDate) {
+    const start = new Date(tripStartDate);
+    const end = new Date(tripEndDate);
+    const days = [];
+    
+    const current = new Date(start);
+    while (current <= end) {
       days.push({
         date: current.toISOString().split('T')[0],
-        items: []
+        dayNumber: Math.floor((current.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1,
       });
       current.setDate(current.getDate() + 1);
     }
@@ -227,104 +253,134 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
     return days;
   };
 
-  const tripDays = generateTripDays();
+  const tripDays = getTripDays();
 
-  // Organize items by day
-  const organizedDays = tripDays.map(day => {
-    const dayLegs = legs.filter(leg => leg.date === day.date);
-    const dayLodging = lodging.filter(stay => stay.date === day.date);
-    
-    const items = [
-      ...dayLegs.map(leg => ({ ...leg, type: 'leg' })),
-      ...dayLodging.map(stay => ({ ...stay, type: 'lodging' }))
-    ];
-    
-    return { ...day, items };
-  });
+  const organizeByDays = () => {
+    if (tripDays.length === 0) {
+      const allDates = [
+        ...legs.map(l => l.date).filter(Boolean),
+        ...lodging.map(l => l.date).filter(Boolean)
+      ];
+      const uniqueDates = [...new Set(allDates)].sort();
+      
+      return uniqueDates.map(date => ({
+        date,
+        dayNumber: null,
+        items: [
+          ...legs.filter(l => l.date === date).map(l => ({ ...l, type: 'leg' })),
+          ...lodging.filter(l => l.date === date).map(l => ({ ...l, type: 'lodging' }))
+        ]
+      }));
+    }
+
+    return tripDays.map(day => {
+      const dayLegs = legs.filter(leg => leg.date === day.date);
+      const dayLodging = lodging.filter(stay => stay.date === day.date);
+      
+      const items = [
+        ...dayLegs.map(leg => ({ ...leg, type: 'leg' })),
+        ...dayLodging.map(stay => ({ ...stay, type: 'lodging' }))
+      ];
+      
+      return {
+        ...day,
+        items
+      };
+    });
+  };
+
+  const organizedDays = organizeByDays();
 
   const handleAddLeg = async () => {
-    if (!newLeg.startCity || !newLeg.endCity) return;
-    
     await createLeg({
       tripId: tripId as any,
-      ...newLeg,
+      startCity: newLeg.startCity,
+      endCity: newLeg.endCity,
+      transportation: newLeg.transportation,
       date: newLeg.date || undefined,
       time: newLeg.time || undefined,
       reservationNumber: newLeg.reservationNumber || undefined,
       notes: newLeg.notes || undefined,
     });
-    
-    setNewLeg({ startCity: "", endCity: "", transportation: "flight", date: "", time: "", reservationNumber: "", notes: "" });
+    setNewLeg({ 
+      startCity: "", 
+      endCity: "", 
+      transportation: "flight", 
+      date: "", 
+      time: "", 
+      reservationNumber: "", 
+      notes: "" 
+    });
     setShowAddLegForm(false);
   };
 
   const handleAddLodging = async () => {
-    if (!newLodging.date || !newLodging.name) return;
-    
     await createLodging({
       tripId: tripId as any,
-      ...newLodging,
+      date: newLodging.date,
+      name: newLodging.name,
       address: newLodging.address || undefined,
       city: newLodging.city || undefined,
       checkIn: newLodging.checkIn || undefined,
       checkOut: newLodging.checkOut || undefined,
       notes: newLodging.notes || undefined,
     });
-    
-    setNewLodging({ date: "", name: "", address: "", city: "", checkIn: "", checkOut: "", notes: "" });
+    setNewLodging({ 
+      date: "", 
+      name: "", 
+      address: "", 
+      city: "", 
+      checkIn: "", 
+      checkOut: "", 
+      notes: "" 
+    });
     setShowAddLodgingForm(false);
-  };
-
-  const handleDeleteLeg = async (legId: string) => {
-    if (confirm("Are you sure you want to delete this travel leg?")) {
-      await deleteLeg({ id: legId as any });
-    }
-  };
-
-  const handleDeleteLodging = async (lodgingId: string) => {
-    if (confirm("Are you sure you want to delete this lodging?")) {
-      await deleteLodging({ id: lodgingId as any });
-    }
   };
 
   return (
     <div className="not-prose">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Trip Itinerary</h2>
-        <div className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="btn btn-primary btn-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Trip Itinerary</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAddLegForm(true)}
+            className="btn btn-primary btn-sm"
+          >
             <Plus className="w-4 h-4" />
-            Add
-          </div>
-          <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-            <li><a onClick={() => setShowAddLegForm(true)}>Add Travel Leg</a></li>
-            <li><a onClick={() => setShowAddLodgingForm(true)}>Add Lodging</a></li>
-          </ul>
+            Add Travel
+          </button>
+          <button
+            onClick={() => setShowAddLodgingForm(true)}
+            className="btn btn-outline btn-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Lodging
+          </button>
         </div>
       </div>
 
-      {/* Add Travel Leg Form */}
+      {/* Add Travel Form */}
       {showAddLegForm && (
-        <div className="card bg-base-100 shadow mb-4">
+        <div className="card bg-base-100 shadow mb-6">
           <div className="card-body">
             <h3 className="card-title">Add Travel Leg</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input"
-                  placeholder="Start City"
-                  value={newLeg.startCity}
-                  onChange={(e) => setNewLeg({ ...newLeg, startCity: e.target.value })}
-                />
-                <input
-                  className="input"
-                  placeholder="End City"
-                  value={newLeg.endCity}
-                  onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                className="input input-sm"
+                placeholder="From city"
+                value={newLeg.startCity}
+                onChange={(e) => setNewLeg({ ...newLeg, startCity: e.target.value })}
+              />
+              <input
+                className="input input-sm"
+                placeholder="To city"
+                value={newLeg.endCity}
+                onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
               <select
-                className="select w-full"
+                className="select select-sm"
                 value={newLeg.transportation}
                 onChange={(e) => setNewLeg({ ...newLeg, transportation: e.target.value as any })}
               >
@@ -335,42 +391,40 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
                 <option value="boat">Boat</option>
                 <option value="other">Other</option>
               </select>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="date"
-                  className="input"
-                  placeholder="Date"
-                  value={newLeg.date}
-                  onChange={(e) => setNewLeg({ ...newLeg, date: e.target.value })}
-                />
-                <input
-                  type="time"
-                  className="input"
-                  placeholder="Time"
-                  value={newLeg.time}
-                  onChange={(e) => setNewLeg({ ...newLeg, time: e.target.value })}
-                />
-              </div>
               <input
-                className="input"
-                placeholder="Reservation Number (optional)"
-                value={newLeg.reservationNumber}
-                onChange={(e) => setNewLeg({ ...newLeg, reservationNumber: e.target.value })}
+                type="date"
+                className="input input-sm"
+                placeholder="Date"
+                value={newLeg.date}
+                onChange={(e) => setNewLeg({ ...newLeg, date: e.target.value })}
               />
-              <textarea
-                className="textarea"
-                placeholder="Notes (optional)"
-                value={newLeg.notes}
-                onChange={(e) => setNewLeg({ ...newLeg, notes: e.target.value })}
-                rows={2}
+              <input
+                type="time"
+                className="input input-sm"
+                placeholder="Time"
+                value={newLeg.time}
+                onChange={(e) => setNewLeg({ ...newLeg, time: e.target.value })}
               />
             </div>
+            <input
+              className="input input-sm"
+              placeholder="Reservation Number (optional)"
+              value={newLeg.reservationNumber}
+              onChange={(e) => setNewLeg({ ...newLeg, reservationNumber: e.target.value })}
+            />
+            <textarea
+              className="textarea textarea-sm"
+              placeholder="Notes (optional)"
+              value={newLeg.notes}
+              onChange={(e) => setNewLeg({ ...newLeg, notes: e.target.value })}
+              rows={2}
+            />
             <div className="card-actions justify-end">
               <button onClick={() => setShowAddLegForm(false)} className="btn btn-ghost btn-sm">
                 Cancel
               </button>
               <button onClick={() => void handleAddLeg()} className="btn btn-primary btn-sm">
-                Add Leg
+                Add Travel Leg
               </button>
             </div>
           </div>
@@ -379,61 +433,61 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
 
       {/* Add Lodging Form */}
       {showAddLodgingForm && (
-        <div className="card bg-base-100 shadow mb-4">
+        <div className="card bg-base-100 shadow mb-6">
           <div className="card-body">
             <h3 className="card-title">Add Lodging</h3>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <input
                 type="date"
-                className="input"
+                className="input input-sm"
                 placeholder="Date"
                 value={newLodging.date}
                 onChange={(e) => setNewLodging({ ...newLodging, date: e.target.value })}
               />
               <input
-                className="input"
-                placeholder="Hotel/Lodging Name"
+                className="input input-sm"
+                placeholder="Hotel/Place name"
                 value={newLodging.name}
                 onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
               />
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  className="input"
-                  placeholder="Address"
-                  value={newLodging.address}
-                  onChange={(e) => setNewLodging({ ...newLodging, address: e.target.value })}
-                />
-                <input
-                  className="input"
-                  placeholder="City"
-                  value={newLodging.city}
-                  onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="time"
-                  className="input"
-                  placeholder="Check-in Time"
-                  value={newLodging.checkIn}
-                  onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
-                />
-                <input
-                  type="time"
-                  className="input"
-                  placeholder="Check-out Time"
-                  value={newLodging.checkOut}
-                  onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
-                />
-              </div>
-              <textarea
-                className="textarea"
-                placeholder="Notes (optional)"
-                value={newLodging.notes}
-                onChange={(e) => setNewLodging({ ...newLodging, notes: e.target.value })}
-                rows={2}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                className="input input-sm"
+                placeholder="Address (optional)"
+                value={newLodging.address}
+                onChange={(e) => setNewLodging({ ...newLodging, address: e.target.value })}
+              />
+              <input
+                className="input input-sm"
+                placeholder="City (optional)"
+                value={newLodging.city}
+                onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="time"
+                className="input input-sm"
+                placeholder="Check-in time"
+                value={newLodging.checkIn}
+                onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
+              />
+              <input
+                type="time"
+                className="input input-sm"
+                placeholder="Check-out time"
+                value={newLodging.checkOut}
+                onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
+              />
+            </div>
+            <textarea
+              className="textarea textarea-sm"
+              placeholder="Notes (optional)"
+              value={newLodging.notes}
+              onChange={(e) => setNewLodging({ ...newLodging, notes: e.target.value })}
+              rows={2}
+            />
             <div className="card-actions justify-end">
               <button onClick={() => setShowAddLodgingForm(false)} className="btn btn-ghost btn-sm">
                 Cancel
@@ -446,46 +500,54 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
         </div>
       )}
 
-      {/* Trip Days */}
-      <div className="space-y-4">
+      {/* Timeline */}
+      <div className="space-y-6">
         {organizedDays.map((day) => (
-          <div key={day.date} className="border-l-2 border-primary pl-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-4 h-4 bg-primary rounded-full -ml-[9px]"></div>
-              <h3 className="text-lg font-semibold">
-                {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </h3>
+          <div key={day.date} className="relative">
+            {/* Day Header */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-primary text-primary-content rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                {day.dayNumber || '•'}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold">{day.date}</h3>
+                <div className="text-sm opacity-70">
+                  {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-3 ml-4">
+
+            {/* Day Items */}
+            <div className="ml-12 space-y-3">
               {day.items.length === 0 ? (
-                <p className="text-sm opacity-70 italic">No activities planned for this day</p>
+                <div className="text-center py-4 opacity-50">
+                  <p>No travel or lodging planned for this day</p>
+                </div>
               ) : (
                 day.items.map((item) => (
                   <div key={`${item.type}-${item._id}`}>
                     {item.type === 'leg' ? (
-                      <TravelLegCard 
-                        leg={item} 
+                      <TravelLegCard
+                        leg={item}
                         isEditing={editingLeg === item._id}
                         onEdit={() => setEditingLeg(item._id)}
                         onSave={() => setEditingLeg(null)}
                         onCancel={() => setEditingLeg(null)}
-                        onDelete={() => void handleDeleteLeg(item._id)}
+                        onDelete={() => void deleteLeg({ id: item._id })}
                         updateLeg={updateLeg}
                       />
                     ) : (
-                      <LodgingCard 
-                        lodging={item} 
+                      <LodgingCard
+                        lodging={item}
                         isEditing={editingLodging === item._id}
                         onEdit={() => setEditingLodging(item._id)}
                         onSave={() => setEditingLodging(null)}
                         onCancel={() => setEditingLodging(null)}
-                        onDelete={() => void handleDeleteLodging(item._id)}
+                        onDelete={() => void deleteLodging({ id: item._id })}
                         updateLodging={updateLodging}
                       />
                     )}
@@ -495,27 +557,33 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
             </div>
           </div>
         ))}
-      </div>
 
-      {organizedDays.length === 0 && (
-        <div className="p-6 bg-base-200 rounded-lg text-center">
-          <p className="opacity-70">No itinerary items yet.</p>
-          <div className="flex gap-2 justify-center mt-2">
-            <button
-              onClick={() => setShowAddLegForm(true)}
-              className="btn btn-primary btn-sm"
-            >
-              Add Travel Leg
-            </button>
-            <button
-              onClick={() => setShowAddLodgingForm(true)}
-              className="btn btn-secondary btn-sm"
-            >
-              Add Lodging
-            </button>
+        {organizedDays.length === 0 && (
+          <div className="text-center py-8">
+            <Calendar className="w-12 h-12 mx-auto text-base-content/30 mb-4" />
+            <h3 className="text-lg font-medium mb-2">No itinerary items yet</h3>
+            <p className="text-base-content/70 mb-4">
+              Start by adding travel legs and lodging for your trip.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => setShowAddLegForm(true)}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Travel
+              </button>
+              <button
+                onClick={() => setShowAddLodgingForm(true)}
+                className="btn btn-outline btn-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Lodging
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -534,7 +602,9 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
   const handleSave = async () => {
     await updateLeg({
       id: leg._id,
-      ...editData,
+      startCity: editData.startCity,
+      endCity: editData.endCity,
+      transportation: editData.transportation,
       date: editData.date || undefined,
       time: editData.time || undefined,
       reservationNumber: editData.reservationNumber || undefined,
@@ -543,40 +613,39 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
     onSave();
   };
 
-  const IconComponent = transportationIcons[leg.transportation];
+  const IconComponent = transportationIcons[leg.transportation] || MapPin;
 
   if (isEditing) {
     return (
-      <div className="p-4 bg-base-100 rounded-lg border">
-        <h4 className="font-medium text-lg mb-3">Edit Travel Leg</h4>
+      <div className="p-4 bg-base-100 rounded-lg border-2 border-primary">
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <input
               className="input input-sm"
-              placeholder="Start City"
+              placeholder="From city"
               value={editData.startCity}
               onChange={(e) => setEditData({ ...editData, startCity: e.target.value })}
             />
             <input
               className="input input-sm"
-              placeholder="End City"
+              placeholder="To city"
               value={editData.endCity}
               onChange={(e) => setEditData({ ...editData, endCity: e.target.value })}
             />
           </div>
-          <select
-            className="select select-sm w-full"
-            value={editData.transportation}
-            onChange={(e) => setEditData({ ...editData, transportation: e.target.value as any })}
-          >
-            <option value="flight">Flight</option>
-            <option value="train">Train</option>
-            <option value="car">Car</option>
-            <option value="bus">Bus</option>
-            <option value="boat">Boat</option>
-            <option value="other">Other</option>
-          </select>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-2">
+            <select
+              className="select select-sm"
+              value={editData.transportation}
+              onChange={(e) => setEditData({ ...editData, transportation: e.target.value as any })}
+            >
+              <option value="flight">Flight</option>
+              <option value="train">Train</option>
+              <option value="car">Car</option>
+              <option value="bus">Bus</option>
+              <option value="boat">Boat</option>
+              <option value="other">Other</option>
+            </select>
             <input
               type="date"
               className="input input-sm"
@@ -681,7 +750,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
   const handleSave = async () => {
     await updateLodging({
       id: lodging._id,
-      ...editData,
+      name: editData.name,
       address: editData.address || undefined,
       city: editData.city || undefined,
       checkIn: editData.checkIn || undefined,
@@ -693,51 +762,44 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
 
   if (isEditing) {
     return (
-      <div className="p-4 bg-base-100 rounded-lg border">
-        <h4 className="font-medium text-lg mb-3">Edit Lodging</h4>
+      <div className="p-4 bg-base-100 rounded-lg border-2 border-primary">
         <div className="space-y-3">
           <input
-            className="input input-sm"
-            placeholder="Hotel/Lodging Name"
+            className="input input-sm w-full"
+            placeholder="Hotel/Place name"
             value={editData.name}
             onChange={(e) => setEditData({ ...editData, name: e.target.value })}
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <input
               className="input input-sm"
-              placeholder="Address"
+              placeholder="Address (optional)"
               value={editData.address}
               onChange={(e) => setEditData({ ...editData, address: e.target.value })}
             />
             <input
               className="input input-sm"
-              placeholder="City"
+              placeholder="City (optional)"
               value={editData.city}
               onChange={(e) => setEditData({ ...editData, city: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <input
               type="time"
               className="input input-sm"
-              placeholder="Check-in Time"
+              placeholder="Check-in time"
               value={editData.checkIn}
               onChange={(e) => setEditData({ ...editData, checkIn: e.target.value })}
             />
             <input
               type="time"
               className="input input-sm"
-              placeholder="Check-out Time"
+              placeholder="Check-out time"
               value={editData.checkOut}
               onChange={(e) => setEditData({ ...editData, checkOut: e.target.value })}
             />
           </div>
-          <input
-            type="date"
-            className="input input-sm"
-            value={editData.date}
-            onChange={(e) => setEditData({ ...editData, date: e.target.value })}
-          />
           <textarea
             className="textarea textarea-sm"
             placeholder="Notes (optional)"
@@ -802,338 +864,6 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MeetingEditCard({ meeting, onSave, onCancel, updateMeeting }: any) {
-  const [editData, setEditData] = useState({
-    title: meeting.title,
-    scheduledDate: meeting.scheduledDate,
-    scheduledTime: meeting.scheduledTime,
-    duration: meeting.duration || "",
-    address: meeting.address,
-    notes: meeting.notes || "",
-  });
-
-  const handleSave = async () => {
-    await updateMeeting({
-      id: meeting._id,
-      title: editData.title,
-      scheduledDate: editData.scheduledDate,
-      scheduledTime: editData.scheduledTime,
-      duration: editData.duration ? parseInt(editData.duration) : undefined,
-      address: editData.address,
-      notes: editData.notes,
-    });
-    onSave();
-  };
-
-  return (
-    <div className="space-y-3">
-      <input
-        className="input input-sm w-full"
-        placeholder="Meeting title"
-        value={editData.title}
-        onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="date"
-          className="input input-sm"
-          value={editData.scheduledDate}
-          onChange={(e) => setEditData({ ...editData, scheduledDate: e.target.value })}
-        />
-        <input
-          type="time"
-          className="input input-sm"
-          value={editData.scheduledTime}
-          onChange={(e) => setEditData({ ...editData, scheduledTime: e.target.value })}
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="number"
-          className="input input-sm"
-          placeholder="Duration (minutes)"
-          value={editData.duration}
-          onChange={(e) => setEditData({ ...editData, duration: e.target.value })}
-        />
-        <input
-          className="input input-sm"
-          placeholder="Address"
-          value={editData.address}
-          onChange={(e) => setEditData({ ...editData, address: e.target.value })}
-        />
-      </div>
-      <textarea
-        className="textarea textarea-sm"
-        placeholder="Notes (optional)"
-        value={editData.notes}
-        onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
-        rows={2}
-      />
-      <div className="flex gap-2 justify-end">
-        <button onClick={onCancel} className="btn btn-ghost btn-xs">
-          Cancel
-        </button>
-        <button onClick={() => void handleSave()} className="btn btn-primary btn-xs">
-          Save
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
-  const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
-  const [showAddMeetingForm, setShowAddMeetingForm] = useState(false);
-
-  const updateMeeting = useMutation(api.meetings.update);
-
-  const outreachCounts = {
-    pending: outreach.filter(o => o.response === "pending").length,
-    interested: outreach.filter(o => o.response === "interested").length,
-    not_interested: outreach.filter(o => o.response === "not_interested").length,
-    no_response: outreach.filter(o => o.response === "no_response").length,
-    meeting_scheduled: outreach.filter(o => o.response === "meeting_scheduled").length,
-  };
-
-  return (
-    <div className="not-prose">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Meetings & Outreach</h2>
-        {meetings.length > 0 && (
-          <button
-            onClick={() => setShowAddMeetingForm(true)}
-            className="btn btn-primary btn-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Meeting
-          </button>
-        )}
-      </div>
-
-      {/* Add Meeting Form */}
-      {showAddMeetingForm && (
-        <div className="card bg-base-100 shadow mb-4">
-          <div className="card-body">
-            <h3 className="card-title">Add Meeting</h3>
-            <div className="alert alert-info mb-4">
-              <div className="flex">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div>
-                  <h3 className="font-bold">How to add meetings</h3>
-                  <div className="text-sm">
-                    Meetings are created through the outreach process:
-                    <ol className="list-decimal list-inside mt-2 space-y-1">
-                      <li>Create outreach to contacts/organizations</li>
-                      <li>When they respond positively, schedule a meeting</li>
-                      <li>The meeting will appear here automatically</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="card-actions justify-end">
-              <button onClick={() => setShowAddMeetingForm(false)} className="btn btn-ghost btn-sm">
-                Got it
-              </button>
-              <Link to="/add-outreach" search={{ tripId }} className="btn btn-primary btn-sm">
-                Create Outreach
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Outreach Status Bar */}
-      {outreach.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-sm font-medium mb-2">Outreach Status</h3>
-          <div className="flex rounded-lg overflow-hidden h-2">
-            {outreachCounts.pending > 0 && (
-              <div 
-                className="bg-warning" 
-                style={{ width: `${(outreachCounts.pending / outreach.length) * 100}%` }}
-                title={`${outreachCounts.pending} pending`}
-              />
-            )}
-            {outreachCounts.interested > 0 && (
-              <div 
-                className="bg-info" 
-                style={{ width: `${(outreachCounts.interested / outreach.length) * 100}%` }}
-                title={`${outreachCounts.interested} interested`}
-              />
-            )}
-            {outreachCounts.not_interested > 0 && (
-              <div 
-                className="bg-neutral" 
-                style={{ width: `${(outreachCounts.not_interested / outreach.length) * 100}%` }}
-                title={`${outreachCounts.not_interested} not interested`}
-              />
-            )}
-            {outreachCounts.no_response > 0 && (
-              <div 
-                className="bg-error" 
-                style={{ width: `${(outreachCounts.no_response / outreach.length) * 100}%` }}
-                title={`${outreachCounts.no_response} no response`}
-              />
-            )}
-            {outreachCounts.meeting_scheduled > 0 && (
-              <div 
-                className="bg-success" 
-                style={{ width: `${(outreachCounts.meeting_scheduled / outreach.length) * 100}%` }}
-                title={`${outreachCounts.meeting_scheduled} meeting scheduled`}
-              />
-            )}
-          </div>
-          <div className="flex justify-between text-xs mt-1 opacity-70">
-            <span>Pending: {outreachCounts.pending}</span>
-            <span>Interested: {outreachCounts.interested}</span>
-            <span>Not Interested: {outreachCounts.not_interested}</span>
-            <span>No Response: {outreachCounts.no_response}</span>
-            <span>Meeting Scheduled: {outreachCounts.meeting_scheduled}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Meetings List */}
-      {meetings.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-3">Meetings</h3>
-          <div className="space-y-3">
-            {meetings.map((meeting) => (
-              <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
-                {editingMeeting === meeting._id ? (
-                  <MeetingEditCard 
-                    meeting={meeting} 
-                    onSave={() => setEditingMeeting(null)}
-                    onCancel={() => setEditingMeeting(null)}
-                    updateMeeting={updateMeeting}
-                  />
-                ) : (
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        <h4 className="font-medium text-lg">{meeting.title}</h4>
-                        <div className={`badge badge-sm ${
-                          meeting.status === 'scheduled' ? 'badge-warning' :
-                          meeting.status === 'confirmed' ? 'badge-info' :
-                          meeting.status === 'completed' ? 'badge-success' :
-                          'badge-error'
-                        }`}>
-                          {meeting.status}
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm opacity-70">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {meeting.scheduledDate} at {meeting.scheduledTime}
-                          {meeting.duration && ` (${meeting.duration} min)`}
-                        </div>
-                        {meeting.address && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {meeting.address}
-                            {meeting.city && `, ${meeting.city}`}
-                          </div>
-                        )}
-                        {meeting.contact && (
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {meeting.contact.name} ({meeting.contact.email})
-                            {meeting.organization && ` • ${meeting.organization.name}`}
-                          </div>
-                        )}
-                        {meeting.notes && <p className="mt-1">{meeting.notes}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setEditingMeeting(meeting._id)}
-                        className="btn btn-ghost btn-xs"
-                        title="Edit meeting"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Outreach List */}
-      {outreach.length > 0 && (
-        <div>
-          <h3 className="text-lg font-medium mb-3">Outreach</h3>
-          <div className="space-y-3">
-            {outreach.map((item) => (
-              <div key={item._id} className="p-4 bg-base-100 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`badge badge-sm ${
-                        item.response === 'pending' ? 'badge-warning' :
-                        item.response === 'interested' ? 'badge-info' :
-                        item.response === 'not_interested' ? 'badge-neutral' :
-                        item.response === 'no_response' ? 'badge-error' :
-                        'badge-success'
-                      }`}>
-                        {item.response.replace('_', ' ')}
-                      </div>
-                      {item.contact && (
-                        <>
-                          <h4 className="font-medium text-lg">{item.contact.name}</h4>
-                          {item.organization && <span className="opacity-70">• {item.organization.name}</span>}
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm opacity-70">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Outreach: {item.outreachDate}
-                        {item.responseDate && ` • Response: ${item.responseDate}`}
-                      </div>
-                      {item.contact?.email && (
-                        <div className="flex items-center gap-1">
-                          <span>📧</span>
-                          {item.contact.email}
-                        </div>
-                      )}
-                      {item.contact?.phone && (
-                        <div className="flex items-center gap-1">
-                          <span>📞</span>
-                          {item.contact.phone}
-                        </div>
-                      )}
-                      {item.proposedAddress && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          Proposed: {item.proposedAddress}
-                          {item.proposedCity && `, ${item.proposedCity}`}
-                        </div>
-                      )}
-                      {item.notes && <p className="mt-1">{item.notes}</p>}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Empty States */}
-      {meetings.length === 0 && outreach.length === 0 && (
-        <div className="p-6 bg-base-200 rounded-lg text-center">
-          <p className="opacity-70">No meetings or outreach found for this trip.</p>
-        </div>
-      )}
     </div>
   );
 }
