@@ -1,6 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Pencil, Hotel, Clock, Users } from "lucide-react";
@@ -44,6 +44,7 @@ function TripDetailsPage() {
   const [editEndDate, setEditEndDate] = useState(trip?.endDate || "");
 
   const updateTrip = useMutation(api.trips.update);
+  const navigate = useNavigate();
 
   const handleSaveTrip = async () => {
     await updateTrip({
@@ -169,13 +170,13 @@ function TripDetailsPage() {
                       <div className="stat-value text-lg">{outreach.length}</div>
                     </div>
                   </div>
-                  <Link 
-                    to={`/trips/${tripId}/meetings`}
-                    className="btn btn-primary btn-sm w-full no-underline"
+                  <button 
+                    onClick={() => navigate({ to: "/trips/$tripId/meetings", params: { tripId } })}
+                    className="btn btn-primary btn-sm w-full"
                   >
                     <Users className="w-4 h-4" />
                     Manage Meetings
-                  </Link>
+                  </button>
                   <Link 
                     to="/add-outreach" 
                     search={{ tripId }} 
