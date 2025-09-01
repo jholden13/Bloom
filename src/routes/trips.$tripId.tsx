@@ -148,17 +148,30 @@ function TripDetailsPage() {
         )}
       </div>
 
-      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
-        <TravelLegsSection tripId={tripId} legs={tripLegs} />
-        <LodgingSection tripId={tripId} lodging={lodging} />
-        <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} />
+      <div className="grid lg:grid-cols-4 md:grid-cols-3 gap-6">
+        <div className="lg:col-span-3 md:col-span-2">
+          <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
+        </div>
+        <div>
+          <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} />
+        </div>
       </div>
     </div>
   );
 }
 
-function TravelLegsSection({ tripId, legs }: { tripId: string; legs: any[] }) {
-  const [showAddForm, setShowAddForm] = useState(false);
+function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDate }: { 
+  tripId: string; 
+  legs: any[]; 
+  lodging: any[]; 
+  tripStartDate?: string; 
+  tripEndDate?: string; 
+}) {
+  const [editingLeg, setEditingLeg] = useState<string | null>(null);
+  const [editingLodging, setEditingLodging] = useState<string | null>(null);
+  const [showAddLegForm, setShowAddLegForm] = useState(false);
+  const [showAddLodgingForm, setShowAddLodgingForm] = useState(false);
+  
   const [newLeg, setNewLeg] = useState({
     startCity: "",
     endCity: "",
@@ -166,8 +179,585 @@ function TravelLegsSection({ tripId, legs }: { tripId: string; legs: any[] }) {
     date: "",
     notes: "",
   });
+  
+  const [newLodging, setNewLodging] = useState({
+    date: "",
+    name: "",
+    address: "",
+    city: "",
+    checkIn: "",
+    checkOut: "",
+    notes: "",
+  });
 
   const createLeg = useMutation(api.tripLegs.create);
+  const updateLeg = useMutation(api.tripLegs.update);
+  const deleteLeg = useMutation(api.tripLegs.remove);
+  const createLodging = useMutation(api.lodging.create);
+  const updateLodging = useMutation(api.lodging.update);
+  const deleteLodging = useMutation(api.lodging.remove);
+
+  // Generate all days of the trip
+  const generateTripDays = () => {
+    const days = [];
+    const startDate = tripStartDate ? new Date(tripStartDate) : null;
+    const endDate = tripEndDate ? new Date(tripEndDate) : null;
+    
+    if (!startDate || !endDate) {
+      // If no trip dates, create days based on existing legs and lodging
+      const allDates = [
+        ...legs.filter(leg => leg.date).map(leg => leg.date),
+        ...lodging.map(stay => stay.date)
+      ];
+      const uniqueDates = [...new Set(allDates)].sort();
+      return uniqueDates.map(date => ({ date, items: [] }));
+    }
+
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      days.push({
+        date: current.toISOString().split('T')[0],
+        items: []
+      });
+      current.setDate(current.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  const tripDays = generateTripDays();
+
+  // Organize items by day
+  const organizedDays = tripDays.map(day => {
+    const dayLegs = legs.filter(leg => leg.date === day.date);
+    const dayLodging = lodging.filter(stay => stay.date === day.date);
+    
+    const items = [
+      ...dayLegs.map(leg => ({ ...leg, type: 'leg' })),
+      ...dayLodging.map(stay => ({ ...stay, type: 'lodging' }))
+    ];
+    
+    return { ...day, items };
+  });
+
+  const handleAddLeg = async () => {
+    if (!newLeg.startCity || !newLeg.endCity) return;
+    
+    await createLeg({
+      tripId: tripId as any,
+      ...newLeg,
+      date: newLeg.date || undefined,
+      notes: newLeg.notes || undefined,
+    });
+    
+    setNewLeg({ startCity: "", endCity: "", transportation: "flight", date: "", notes: "" });
+    setShowAddLegForm(false);
+  };
+
+  const handleAddLodging = async () => {
+    if (!newLodging.date || !newLodging.name) return;
+    
+    await createLodging({
+      tripId: tripId as any,
+      ...newLodging,
+      address: newLodging.address || undefined,
+      city: newLodging.city || undefined,
+      checkIn: newLodging.checkIn || undefined,
+      checkOut: newLodging.checkOut || undefined,
+      notes: newLodging.notes || undefined,
+    });
+    
+    setNewLodging({ date: "", name: "", address: "", city: "", checkIn: "", checkOut: "", notes: "" });
+    setShowAddLodgingForm(false);
+  };
+
+  const handleDeleteLeg = async (legId: string) => {
+    if (confirm("Are you sure you want to delete this travel leg?")) {
+      await deleteLeg({ id: legId as any });
+    }
+  };
+
+  const handleDeleteLodging = async (lodgingId: string) => {
+    if (confirm("Are you sure you want to delete this lodging?")) {
+      await deleteLodging({ id: lodgingId as any });
+    }
+  };
+
+  return (
+    <div className="not-prose">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Trip Itinerary</h2>
+        <div className="dropdown dropdown-end">
+          <div tabIndex={0} role="button" className="btn btn-primary btn-sm">
+            <Plus className="w-4 h-4" />
+            Add
+          </div>
+          <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+            <li><a onClick={() => setShowAddLegForm(true)}>Add Travel Leg</a></li>
+            <li><a onClick={() => setShowAddLodgingForm(true)}>Add Lodging</a></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Add Travel Leg Form */}
+      {showAddLegForm && (
+        <div className="card bg-base-100 shadow mb-4">
+          <div className="card-body">
+            <h3 className="card-title">Add Travel Leg</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="input"
+                  placeholder="Start City"
+                  value={newLeg.startCity}
+                  onChange={(e) => setNewLeg({ ...newLeg, startCity: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="End City"
+                  value={newLeg.endCity}
+                  onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
+                />
+              </div>
+              <select
+                className="select w-full"
+                value={newLeg.transportation}
+                onChange={(e) => setNewLeg({ ...newLeg, transportation: e.target.value as any })}
+              >
+                <option value="flight">Flight</option>
+                <option value="train">Train</option>
+                <option value="car">Car</option>
+                <option value="bus">Bus</option>
+                <option value="boat">Boat</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="date"
+                className="input"
+                placeholder="Date"
+                value={newLeg.date}
+                onChange={(e) => setNewLeg({ ...newLeg, date: e.target.value })}
+              />
+              <textarea
+                className="textarea"
+                placeholder="Notes (optional)"
+                value={newLeg.notes}
+                onChange={(e) => setNewLeg({ ...newLeg, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="card-actions justify-end">
+              <button onClick={() => setShowAddLegForm(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button onClick={handleAddLeg} className="btn btn-primary btn-sm">
+                Add Leg
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lodging Form */}
+      {showAddLodgingForm && (
+        <div className="card bg-base-100 shadow mb-4">
+          <div className="card-body">
+            <h3 className="card-title">Add Lodging</h3>
+            <div className="space-y-3">
+              <input
+                type="date"
+                className="input"
+                placeholder="Date"
+                value={newLodging.date}
+                onChange={(e) => setNewLodging({ ...newLodging, date: e.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Hotel/Lodging Name"
+                value={newLodging.name}
+                onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="input"
+                  placeholder="Address"
+                  value={newLodging.address}
+                  onChange={(e) => setNewLodging({ ...newLodging, address: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="City"
+                  value={newLodging.city}
+                  onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="time"
+                  className="input"
+                  placeholder="Check-in Time"
+                  value={newLodging.checkIn}
+                  onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
+                />
+                <input
+                  type="time"
+                  className="input"
+                  placeholder="Check-out Time"
+                  value={newLodging.checkOut}
+                  onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
+                />
+              </div>
+              <textarea
+                className="textarea"
+                placeholder="Notes (optional)"
+                value={newLodging.notes}
+                onChange={(e) => setNewLodging({ ...newLodging, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="card-actions justify-end">
+              <button onClick={() => setShowAddLodgingForm(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button onClick={handleAddLodging} className="btn btn-primary btn-sm">
+                Add Lodging
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trip Days */}
+      <div className="space-y-4">
+        {organizedDays.map((day, dayIndex) => (
+          <div key={day.date} className="border-l-2 border-primary pl-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-4 h-4 bg-primary rounded-full -ml-[9px]"></div>
+              <h3 className="text-lg font-semibold">
+                {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </h3>
+            </div>
+            
+            <div className="space-y-3 ml-4">
+              {day.items.length === 0 ? (
+                <p className="text-sm opacity-70 italic">No activities planned for this day</p>
+              ) : (
+                day.items.map((item) => (
+                  <div key={`${item.type}-${item._id}`}>
+                    {item.type === 'leg' ? (
+                      <TravelLegCard 
+                        leg={item} 
+                        isEditing={editingLeg === item._id}
+                        onEdit={() => setEditingLeg(item._id)}
+                        onSave={() => setEditingLeg(null)}
+                        onCancel={() => setEditingLeg(null)}
+                        onDelete={() => void handleDeleteLeg(item._id)}
+                        updateLeg={updateLeg}
+                      />
+                    ) : (
+                      <LodgingCard 
+                        lodging={item} 
+                        isEditing={editingLodging === item._id}
+                        onEdit={() => setEditingLodging(item._id)}
+                        onSave={() => setEditingLodging(null)}
+                        onCancel={() => setEditingLodging(null)}
+                        onDelete={() => void handleDeleteLodging(item._id)}
+                        updateLodging={updateLodging}
+                      />
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {organizedDays.length === 0 && (
+        <div className="p-6 bg-base-200 rounded-lg text-center">
+          <p className="opacity-70">No itinerary items yet.</p>
+          <div className="flex gap-2 justify-center mt-2">
+            <button
+              onClick={() => setShowAddLegForm(true)}
+              className="btn btn-primary btn-sm"
+            >
+              Add Travel Leg
+            </button>
+            <button
+              onClick={() => setShowAddLodgingForm(true)}
+              className="btn btn-secondary btn-sm"
+            >
+              Add Lodging
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, updateLeg }: any) {
+  const [editData, setEditData] = useState({
+    startCity: leg.startCity,
+    endCity: leg.endCity,
+    transportation: leg.transportation,
+    date: leg.date || "",
+    notes: leg.notes || "",
+  });
+
+  const handleSave = async () => {
+    await updateLeg({
+      id: leg._id,
+      ...editData,
+      date: editData.date || undefined,
+      notes: editData.notes || undefined,
+    });
+    onSave();
+  };
+
+  const IconComponent = transportationIcons[leg.transportation];
+
+  if (isEditing) {
+    return (
+      <div className="p-4 bg-base-100 rounded-lg border">
+        <h4 className="font-medium text-lg mb-3">Edit Travel Leg</h4>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              className="input input-sm"
+              placeholder="Start City"
+              value={editData.startCity}
+              onChange={(e) => setEditData({ ...editData, startCity: e.target.value })}
+            />
+            <input
+              className="input input-sm"
+              placeholder="End City"
+              value={editData.endCity}
+              onChange={(e) => setEditData({ ...editData, endCity: e.target.value })}
+            />
+          </div>
+          <select
+            className="select select-sm w-full"
+            value={editData.transportation}
+            onChange={(e) => setEditData({ ...editData, transportation: e.target.value as any })}
+          >
+            <option value="flight">Flight</option>
+            <option value="train">Train</option>
+            <option value="car">Car</option>
+            <option value="bus">Bus</option>
+            <option value="boat">Boat</option>
+            <option value="other">Other</option>
+          </select>
+          <input
+            type="date"
+            className="input input-sm"
+            value={editData.date}
+            onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+          />
+          <textarea
+            className="textarea textarea-sm"
+            placeholder="Notes (optional)"
+            value={editData.notes}
+            onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+            rows={2}
+          />
+        </div>
+        <div className="flex gap-2 justify-end mt-3">
+          <button onClick={onCancel} className="btn btn-ghost btn-xs">
+            Cancel
+          </button>
+          <button onClick={handleSave} className="btn btn-primary btn-xs">
+            Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-base-100 rounded-lg">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <IconComponent className="w-4 h-4 text-primary" />
+            <span className="text-sm capitalize font-medium">{leg.transportation}</span>
+          </div>
+          <h4 className="font-medium text-lg">
+            {leg.startCity} → {leg.endCity}
+          </h4>
+          {leg.notes && (
+            <p className="text-sm opacity-70 mt-1">{leg.notes}</p>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={onEdit}
+            className="btn btn-ghost btn-xs"
+            title="Edit leg"
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+            title="Delete leg"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, updateLodging }: any) {
+  const [editData, setEditData] = useState({
+    name: lodging.name,
+    address: lodging.address || "",
+    city: lodging.city || "",
+    checkIn: lodging.checkIn || "",
+    checkOut: lodging.checkOut || "",
+    notes: lodging.notes || "",
+    date: lodging.date,
+  });
+
+  const handleSave = async () => {
+    await updateLodging({
+      id: lodging._id,
+      ...editData,
+      address: editData.address || undefined,
+      city: editData.city || undefined,
+      checkIn: editData.checkIn || undefined,
+      checkOut: editData.checkOut || undefined,
+      notes: editData.notes || undefined,
+    });
+    onSave();
+  };
+
+  if (isEditing) {
+    return (
+      <div className="p-4 bg-base-100 rounded-lg border">
+        <h4 className="font-medium text-lg mb-3">Edit Lodging</h4>
+        <div className="space-y-3">
+          <input
+            className="input input-sm"
+            placeholder="Hotel/Lodging Name"
+            value={editData.name}
+            onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              className="input input-sm"
+              placeholder="Address"
+              value={editData.address}
+              onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+            />
+            <input
+              className="input input-sm"
+              placeholder="City"
+              value={editData.city}
+              onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="time"
+              className="input input-sm"
+              placeholder="Check-in Time"
+              value={editData.checkIn}
+              onChange={(e) => setEditData({ ...editData, checkIn: e.target.value })}
+            />
+            <input
+              type="time"
+              className="input input-sm"
+              placeholder="Check-out Time"
+              value={editData.checkOut}
+              onChange={(e) => setEditData({ ...editData, checkOut: e.target.value })}
+            />
+          </div>
+          <input
+            type="date"
+            className="input input-sm"
+            value={editData.date}
+            onChange={(e) => setEditData({ ...editData, date: e.target.value })}
+          />
+          <textarea
+            className="textarea textarea-sm"
+            placeholder="Notes (optional)"
+            value={editData.notes}
+            onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+            rows={2}
+          />
+        </div>
+        <div className="flex gap-2 justify-end mt-3">
+          <button onClick={onCancel} className="btn btn-ghost btn-xs">
+            Cancel
+          </button>
+          <button onClick={handleSave} className="btn btn-primary btn-xs">
+            Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-base-100 rounded-lg">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Hotel className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">Lodging</span>
+          </div>
+          <h4 className="font-medium text-lg">{lodging.name}</h4>
+          {lodging.city && (
+            <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
+              <MapPin className="w-3 h-3" />
+              {lodging.address ? `${lodging.address}, ${lodging.city}` : lodging.city}
+            </div>
+          )}
+          {(lodging.checkIn || lodging.checkOut) && (
+            <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
+              <Clock className="w-3 h-3" />
+              {lodging.checkIn && `Check-in: ${lodging.checkIn}`}
+              {lodging.checkIn && lodging.checkOut && " | "}
+              {lodging.checkOut && `Check-out: ${lodging.checkOut}`}
+            </div>
+          )}
+          {lodging.notes && (
+            <p className="text-sm opacity-70 mt-1">{lodging.notes}</p>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={onEdit}
+            className="btn btn-ghost btn-xs"
+            title="Edit lodging"
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+            title="Delete lodging"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Old components removed - functionality moved to TripItinerarySection
+
+function MeetingsSection({ meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
+  const outreachCounts = {
   const deleteLeg = useMutation(api.tripLegs.remove);
 
   const handleAddLeg = async () => {
