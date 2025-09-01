@@ -1,35 +1,26 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Calendar, MapPin, Users, Plus, FileText, CheckCircle, Trash2, ChevronDown, Edit, Pencil } from "lucide-react";
+import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Edit, Pencil, Hotel, Clock } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
-// Helper function to format address for Google Maps and display
-const formatAddress = (item: any) => {
-  // Check for new structured address fields first
-  if (item.proposedStreetAddress || item.streetAddress) {
-    const parts = [
-      item.proposedStreetAddress || item.streetAddress,
-      item.proposedCity || item.city,
-      item.proposedState || item.state,
-      item.proposedZipCode || item.zipCode,
-      item.proposedCountry || item.country,
-    ].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : null;
-  }
-  // Fall back to legacy single address field
-  return item.proposedAddress || item.address || null;
+const transportationIcons: Record<string, React.ComponentType<any>> = {
+  flight: Plane,
+  train: Train,
+  car: Car,
+  bus: Bus,
+  boat: Ship,
+  other: MapPin,
 };
 
 export const Route = createFileRoute("/trips/$tripId")({
   loader: async ({ context: { queryClient }, params: { tripId } }) => {
     await Promise.all([
       queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
-      queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
-      queryClient.ensureQueryData(convexQuery(api.outreach.getSummary, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.tripLegs.list, { tripId: tripId as any })),
+      queryClient.ensureQueryData(convexQuery(api.lodging.list, { tripId: tripId as any })),
     ]);
   },
   component: TripDetailsPage,
@@ -44,35 +35,17 @@ function TripDetailsPage() {
   const [editEndDate, setEditEndDate] = useState("");
   
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
-  const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
-  const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
-  const { data: summary } = useSuspenseQuery(convexQuery(api.outreach.getSummary, { tripId: tripId as any }));
+  const { data: tripLegs } = useSuspenseQuery(convexQuery(api.tripLegs.list, { tripId: tripId as any }));
+  const { data: lodging } = useSuspenseQuery(convexQuery(api.lodging.list, { tripId: tripId as any }));
   
-  const deleteOutreach = useMutation(api.outreach.deleteOutreach);
-  const updateOutreachResponse = useMutation(api.outreach.updateResponse);
   const updateTrip = useMutation(api.trips.update);
 
-  // Initialize edit values when trip data loads
   if (trip && !isEditing && !editName) {
     setEditName(trip.name || "");
     setEditDescription(trip.description || "");
     setEditStartDate(trip.startDate || "");
     setEditEndDate(trip.endDate || "");
   }
-
-  const handleDeleteOutreach = async (outreachId: string, organizationName: string) => {
-    if (confirm(`Are you sure you want to delete the outreach to "${organizationName}"?`)) {
-      await deleteOutreach({ id: outreachId as any });
-    }
-  };
-
-  const handleStatusChange = async (outreachId: string, newStatus: string) => {
-    await updateOutreachResponse({
-      id: outreachId as any,
-      response: newStatus as any,
-      responseDate: new Date().toISOString().split('T')[0],
-    });
-  };
 
   const handleSaveTrip = async () => {
     await updateTrip({
@@ -171,302 +144,348 @@ function TripDetailsPage() {
         )}
       </div>
 
-      {/* Summary Stats */}
-      <div className="not-prose grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl">{summary.total}</div>
-          <div className="stat-title">Total Outreach</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-warning">{summary.pending}</div>
-          <div className="stat-title">Pending</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-primary">{summary.meeting_scheduled}</div>
-          <div className="stat-title">Meetings</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-neutral">{summary.no_response}</div>
-          <div className="stat-title">No Response</div>
-        </div>
-        <div className="stat bg-base-100 rounded-lg">
-          <div className="stat-value text-2xl text-error">{summary.not_interested + summary.interested}</div>
-          <div className="stat-title">No Interest</div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="not-prose flex gap-2 justify-center">
-        <Link to="/add-outreach" search={{ tripId }}>
-          <button className="btn btn-primary">
-            <Plus className="w-4 h-4" />
-            Add Outreach
-          </button>
-        </Link>
-      </div>
-
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Recent Outreach */}
-        <div className="not-prose">
-          <h2 className="text-xl font-semibold mb-4">Recent Outreach</h2>
-          {outreach.length === 0 ? (
-            <div className="p-6 bg-base-200 rounded-lg text-center">
-              <p className="opacity-70">No outreach recorded yet.</p>
-              <Link to="/add-outreach" search={{ tripId }}>
-                <button className="btn btn-primary btn-sm mt-2">Add First Outreach</button>
-              </Link>
-            </div>
-          ) : (
+        <TravelLegsSection tripId={tripId} legs={tripLegs} />
+        <LodgingSection tripId={tripId} lodging={lodging} />
+      </div>
+    </div>
+  );
+}
+
+function TravelLegsSection({ tripId, legs }: { tripId: string; legs: any[] }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newLeg, setNewLeg] = useState({
+    startCity: "",
+    endCity: "",
+    transportation: "flight" as const,
+    date: "",
+    notes: "",
+  });
+
+  const createLeg = useMutation(api.tripLegs.create);
+  const deleteLeg = useMutation(api.tripLegs.remove);
+
+  const handleAddLeg = async () => {
+    if (!newLeg.startCity || !newLeg.endCity) return;
+    
+    await createLeg({
+      tripId: tripId as any,
+      ...newLeg,
+      date: newLeg.date || undefined,
+      notes: newLeg.notes || undefined,
+    });
+    
+    setNewLeg({ startCity: "", endCity: "", transportation: "flight", date: "", notes: "" });
+    setShowAddForm(false);
+  };
+
+  const handleDeleteLeg = async (legId: string) => {
+    if (confirm("Are you sure you want to delete this travel leg?")) {
+      await deleteLeg({ id: legId as any });
+    }
+  };
+
+  return (
+    <div className="not-prose">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Travel Legs</h2>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="btn btn-primary btn-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Add Leg
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div className="card bg-base-100 shadow mb-4">
+          <div className="card-body">
+            <h3 className="card-title">Add Travel Leg</h3>
             <div className="space-y-3">
-              {outreach
-                .sort((a, b) => {
-                  // Define priority order for response types
-                  const responsePriority = {
-                    'meeting_scheduled': 1,
-                    'pending': 2,
-                    'no_response': 3,
-                    'not_interested': 4,
-                    'interested': 5 // Still handle existing data
-                  };
-                  
-                  // First sort by response type priority
-                  const aPriority = responsePriority[a.response] || 999;
-                  const bPriority = responsePriority[b.response] || 999;
-                  
-                  if (aPriority !== bPriority) {
-                    return aPriority - bPriority;
-                  }
-                  
-                  // Then by outreach date (newest first)
-                  const dateComparison = new Date(b.outreachDate).getTime() - new Date(a.outreachDate).getTime();
-                  if (dateComparison !== 0) {
-                    return dateComparison;
-                  }
-                  
-                  // Finally by organization name (alphabetical)
-                  const aName = a.organization?.name || '';
-                  const bName = b.organization?.name || '';
-                  return aName.localeCompare(bName);
-                })
-                .slice(0, 5)
-                .map((item) => (
-                <div key={item._id} className="p-4 bg-base-100 rounded-lg">
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="input"
+                  placeholder="Start City"
+                  value={newLeg.startCity}
+                  onChange={(e) => setNewLeg({ ...newLeg, startCity: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="End City"
+                  value={newLeg.endCity}
+                  onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
+                />
+              </div>
+              <select
+                className="select w-full"
+                value={newLeg.transportation}
+                onChange={(e) => setNewLeg({ ...newLeg, transportation: e.target.value as any })}
+              >
+                <option value="flight">Flight</option>
+                <option value="train">Train</option>
+                <option value="car">Car</option>
+                <option value="bus">Bus</option>
+                <option value="boat">Boat</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="date"
+                className="input"
+                placeholder="Date"
+                value={newLeg.date}
+                onChange={(e) => setNewLeg({ ...newLeg, date: e.target.value })}
+              />
+              <textarea
+                className="textarea"
+                placeholder="Notes (optional)"
+                value={newLeg.notes}
+                onChange={(e) => setNewLeg({ ...newLeg, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="card-actions justify-end">
+              <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button onClick={handleAddLeg} className="btn btn-primary btn-sm">
+                Add Leg
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {legs.length === 0 ? (
+        <div className="p-6 bg-base-200 rounded-lg text-center">
+          <p className="opacity-70">No travel legs added yet.</p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn btn-primary btn-sm mt-2"
+          >
+            Add First Leg
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {legs
+            .sort((a, b) => a.order - b.order)
+            .map((leg, index) => {
+              const IconComponent = transportationIcons[leg.transportation];
+              return (
+                <div key={leg._id} className="p-4 bg-base-100 rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h4 className="font-medium">{item.organization?.name}</h4>
-                      <p className="text-sm opacity-70">{item.contact?.name}</p>
-                      <p className="text-xs opacity-60">{item.outreachDate}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Status Dropdown */}
-                      <div className="dropdown dropdown-end">
-                        <div 
-                          tabIndex={0} 
-                          role="button" 
-                          className={`badge cursor-pointer ${
-                            item.response === 'meeting_scheduled' ? 'badge-success' :
-                            item.response === 'pending' ? 'badge-warning' :
-                            item.response === 'no_response' ? 'badge-neutral' :
-                            'badge-error'
-                          }`}
-                        >
-                          {item.response.replace('_', ' ')}
-                          <ChevronDown className="w-3 h-3 ml-1" />
-                        </div>
-                        <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-                          <li>
-                            <a onClick={() => handleStatusChange(item._id, 'pending')} 
-                               className={item.response === 'pending' ? 'active' : ''}>
-                              <span className="badge badge-warning badge-sm">pending</span>
-                            </a>
-                          </li>
-                          <li>
-                            <a onClick={() => handleStatusChange(item._id, 'not_interested')} 
-                               className={item.response === 'not_interested' ? 'active' : ''}>
-                              <span className="badge badge-error badge-sm">not interested</span>
-                            </a>
-                          </li>
-                          <li>
-                            <a onClick={() => handleStatusChange(item._id, 'no_response')} 
-                               className={item.response === 'no_response' ? 'active' : ''}>
-                              <span className="badge badge-neutral badge-sm">no response</span>
-                            </a>
-                          </li>
-                          <li>
-                            <a onClick={() => handleStatusChange(item._id, 'meeting_scheduled')} 
-                               className={item.response === 'meeting_scheduled' ? 'active' : ''}>
-                              <span className="badge badge-success badge-sm">meeting scheduled</span>
-                            </a>
-                          </li>
-                        </ul>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="badge badge-neutral badge-sm">Leg {index + 1}</div>
+                        <IconComponent className="w-4 h-4 text-primary" />
+                        <span className="text-sm capitalize">{leg.transportation}</span>
                       </div>
-                      
-                      {/* Edit Button */}
-                      <Link to="/edit-outreach" search={{ id: item._id }}>
-                        <button
-                          className="btn btn-ghost btn-xs text-info hover:bg-info hover:text-info-content"
-                          title="Edit outreach"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                      </Link>
-
-                      {/* Delete Button */}
-                      <button
-                        onClick={() => handleDeleteOutreach(item._id, item.organization?.name || 'this organization')}
-                        className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                        title="Delete outreach"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {outreach.length > 5 && (
-                <div className="text-center">
-                  <button className="btn btn-sm btn-ghost">View All Outreach ({outreach.length})</button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Upcoming Meetings */}
-        <div className="not-prose">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Upcoming Meetings</h2>
-            <Link to="/print-meetings" search={{ tripId }}>
-              <button className="btn btn-outline btn-sm">
-                <FileText className="w-4 h-4" />
-                Print Schedule
-              </button>
-            </Link>
-          </div>
-          {(() => {
-            const scheduledMeetings = meetings.filter(m => m.status !== 'cancelled');
-            const scheduledOutreach = outreach.filter(o => o.response === 'meeting_scheduled');
-            
-            // Create combined list with proper date handling
-            const allMeetingItems = [
-              ...scheduledMeetings.map(meeting => ({
-                type: 'formal',
-                date: meeting.scheduledDate,
-                time: meeting.scheduledTime,
-                sortDateTime: new Date(`${meeting.scheduledDate}T${meeting.scheduledTime}`),
-                ...meeting
-              })),
-              ...scheduledOutreach.map(item => ({
-                type: 'scheduled',
-                date: item.proposedMeetingTime ? new Date(item.proposedMeetingTime).toISOString().split('T')[0] : item.responseDate || item.outreachDate,
-                time: item.proposedMeetingTime ? new Date(item.proposedMeetingTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'TBD',
-                sortDateTime: item.proposedMeetingTime ? new Date(item.proposedMeetingTime) : new Date(item.responseDate || item.outreachDate),
-                ...item
-              }))
-            ];
-
-            // Sort chronologically
-            allMeetingItems.sort((a, b) => a.sortDateTime.getTime() - b.sortDateTime.getTime());
-
-            // Group by date
-            const groupedByDate = allMeetingItems.reduce((groups: Record<string, any[]>, item) => {
-              const dateKey = item.date;
-              if (!groups[dateKey]) {
-                groups[dateKey] = [];
-              }
-              groups[dateKey].push(item);
-              return groups;
-            }, {});
-
-            const totalMeetingItems = allMeetingItems.length;
-            
-            return totalMeetingItems === 0 ? (
-              <div className="p-6 bg-base-200 rounded-lg text-center">
-                <p className="opacity-70">No meetings scheduled yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {Object.entries(groupedByDate).map(([date, dayMeetings]: [string, any[]]) => (
-                  <div key={date}>
-                    {/* Date Header */}
-                    <h3 className="text-lg font-semibold mb-3 pb-2 border-b border-base-300">
-                      {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      })}
-                    </h3>
-                    
-                    {/* Meetings for this day */}
-                    <div className="space-y-3">
-                      {dayMeetings.map((item: any) => (
-                        <div 
-                          key={item.type === 'formal' ? item._id : `outreach-${item._id}`} 
-                          className={`p-5 rounded-lg ${
-                            item.type === 'formal' ? 'bg-base-100' : 'bg-base-100 border border-success border-dashed'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-lg mb-2">
-                                {item.type === 'formal' ? item.title : item.organization?.name}
-                                {item.type === 'scheduled' && (!formatAddress(item) || !item.proposedMeetingTime) && (
-                                  <span className="text-sm font-normal opacity-60 ml-2">(pending details)</span>
-                                )}
-                              </h4>
-                              
-                              <p className="text-base opacity-80 mb-3">{item.organization?.name || item.contact?.name}</p>
-                              
-                              {/* Large formatted date/time/address */}
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="w-5 h-5 text-primary" />
-                                  <span className="text-lg font-medium">{item.time}</span>
-                                </div>
-                                
-                                {formatAddress(item) && (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-primary" />
-                                    <a
-                                      href={`https://maps.google.com/maps?q=${encodeURIComponent(formatAddress(item))}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-lg font-medium text-primary hover:text-primary-focus underline"
-                                    >
-                                      {formatAddress(item)}
-                                    </a>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {item.type === 'scheduled' && !item.proposedMeetingTime && (
-                                <p className="text-sm opacity-60 mt-2">
-                                  Meeting scheduled but time/details pending
-                                </p>
-                              )}
-                            </div>
-                            
-                            <div className={`badge badge-lg ${
-                              item.type === 'formal' ? (
-                                item.status === 'confirmed' ? 'badge-success' :
-                                item.status === 'completed' ? 'badge-info' :
-                                'badge-warning'
-                              ) : 'badge-success'
-                            }`}>
-                              {item.type === 'formal' ? item.status : 'meeting scheduled'}
-                            </div>
-                          </div>
+                      <h4 className="font-medium text-lg">
+                        {leg.startCity} → {leg.endCity}
+                      </h4>
+                      {leg.date && (
+                        <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
+                          <Calendar className="w-3 h-3" />
+                          {leg.date}
                         </div>
-                      ))}
+                      )}
+                      {leg.notes && (
+                        <p className="text-sm opacity-70 mt-1">{leg.notes}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteLeg(leg._id)}
+                      className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                      title="Delete leg"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LodgingSection({ tripId, lodging }: { tripId: string; lodging: any[] }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newLodging, setNewLodging] = useState({
+    date: "",
+    name: "",
+    address: "",
+    city: "",
+    checkIn: "",
+    checkOut: "",
+    notes: "",
+  });
+
+  const createLodging = useMutation(api.lodging.create);
+  const deleteLodging = useMutation(api.lodging.remove);
+
+  const handleAddLodging = async () => {
+    if (!newLodging.date || !newLodging.name) return;
+    
+    await createLodging({
+      tripId: tripId as any,
+      ...newLodging,
+      address: newLodging.address || undefined,
+      city: newLodging.city || undefined,
+      checkIn: newLodging.checkIn || undefined,
+      checkOut: newLodging.checkOut || undefined,
+      notes: newLodging.notes || undefined,
+    });
+    
+    setNewLodging({ date: "", name: "", address: "", city: "", checkIn: "", checkOut: "", notes: "" });
+    setShowAddForm(false);
+  };
+
+  const handleDeleteLodging = async (lodgingId: string) => {
+    if (confirm("Are you sure you want to delete this lodging?")) {
+      await deleteLodging({ id: lodgingId as any });
+    }
+  };
+
+  return (
+    <div className="not-prose">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Lodging</h2>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="btn btn-primary btn-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Add Lodging
+        </button>
+      </div>
+
+      {showAddForm && (
+        <div className="card bg-base-100 shadow mb-4">
+          <div className="card-body">
+            <h3 className="card-title">Add Lodging</h3>
+            <div className="space-y-3">
+              <input
+                type="date"
+                className="input"
+                placeholder="Date"
+                value={newLodging.date}
+                onChange={(e) => setNewLodging({ ...newLodging, date: e.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Hotel/Lodging Name"
+                value={newLodging.name}
+                onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  className="input"
+                  placeholder="Address"
+                  value={newLodging.address}
+                  onChange={(e) => setNewLodging({ ...newLodging, address: e.target.value })}
+                />
+                <input
+                  className="input"
+                  placeholder="City"
+                  value={newLodging.city}
+                  onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="time"
+                  className="input"
+                  placeholder="Check-in Time"
+                  value={newLodging.checkIn}
+                  onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
+                />
+                <input
+                  type="time"
+                  className="input"
+                  placeholder="Check-out Time"
+                  value={newLodging.checkOut}
+                  onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
+                />
+              </div>
+              <textarea
+                className="textarea"
+                placeholder="Notes (optional)"
+                value={newLodging.notes}
+                onChange={(e) => setNewLodging({ ...newLodging, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="card-actions justify-end">
+              <button onClick={() => setShowAddForm(false)} className="btn btn-ghost btn-sm">
+                Cancel
+              </button>
+              <button onClick={handleAddLodging} className="btn btn-primary btn-sm">
+                Add Lodging
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lodging.length === 0 ? (
+        <div className="p-6 bg-base-200 rounded-lg text-center">
+          <p className="opacity-70">No lodging added yet.</p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn btn-primary btn-sm mt-2"
+          >
+            Add First Lodging
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {lodging
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .map((stay) => (
+              <div key={stay._id} className="p-4 bg-base-100 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Hotel className="w-4 h-4 text-primary" />
+                      <h4 className="font-medium text-lg">{stay.name}</h4>
+                    </div>
+                    <div className="space-y-1 text-sm opacity-70">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {stay.date}
+                      </div>
+                      {stay.city && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {stay.address ? `${stay.address}, ${stay.city}` : stay.city}
+                        </div>
+                      )}
+                      {(stay.checkIn || stay.checkOut) && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {stay.checkIn && `Check-in: ${stay.checkIn}`}
+                          {stay.checkIn && stay.checkOut && " | "}
+                          {stay.checkOut && `Check-out: ${stay.checkOut}`}
+                        </div>
+                      )}
+                      {stay.notes && <p className="mt-1">{stay.notes}</p>}
                     </div>
                   </div>
-                ))}
+                  <button
+                    onClick={() => handleDeleteLodging(stay._id)}
+                    className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                    title="Delete lodging"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
-            );
-          })()}
+            ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

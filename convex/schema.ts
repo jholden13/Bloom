@@ -83,4 +83,34 @@ export default defineSchema({
     .index("by_trip", ["tripId"])
     .index("by_scheduled_date", ["scheduledDate"])
     .index("by_status", ["status"]),
+
+  tripLegs: defineTable({
+    tripId: v.id("trips"),
+    order: v.number(),
+    startCity: v.string(),
+    endCity: v.string(),
+    transportation: v.union(
+      v.literal("flight"),
+      v.literal("train"),
+      v.literal("car"),
+      v.literal("bus"),
+      v.literal("boat"),
+      v.literal("other")
+    ),
+    date: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  }).index("by_trip", ["tripId"]),
+
+  lodging: defineTable({
+    tripId: v.id("trips"),
+    date: v.string(),
+    name: v.string(),
+    address: v.optional(v.string()),
+    city: v.optional(v.string()),
+    checkIn: v.optional(v.string()),
+    checkOut: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  })
+    .index("by_trip", ["tripId"])
+    .index("by_date", ["date"]),
 });

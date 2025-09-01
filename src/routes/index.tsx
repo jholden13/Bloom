@@ -20,11 +20,11 @@ function HomePage() {
       <div className="not-prose flex justify-center mb-4">
         <Calendar className="w-16 h-16 text-primary" />
       </div>
-      <h1>Business Trip Scheduler</h1>
-      <p className="text-lg opacity-80 mb-6">Manage outreach and schedule meetings for your business trips</p>
+      <h1>Trip Planner</h1>
+      <p className="text-lg opacity-80 mb-6">Plan your trips with detailed travel legs and daily accommodations</p>
 
       <Unauthenticated>
-        <p>Sign in to start managing your business trips and meetings.</p>
+        <p>Sign in to start planning your trips.</p>
         <div className="not-prose mt-4">
           <SignInButton mode="modal">
             <button className="btn btn-primary btn-lg">Get Started</button>
@@ -63,7 +63,7 @@ function TripsDashboard() {
       {trips.length === 0 ? (
         <div className="not-prose">
           <div className="p-8 bg-base-200 rounded-lg">
-            <p className="opacity-70">No trips yet. Create your first business trip to get started!</p>
+            <p className="opacity-70">No trips yet. Create your first trip to get started!</p>
           </div>
         </div>
       ) : (
