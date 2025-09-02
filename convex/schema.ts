@@ -101,6 +101,10 @@ export default defineSchema({
     time: v.optional(v.string()),
     reservationNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   }).index("by_trip", ["tripId"]),
 
   lodging: defineTable({
@@ -117,6 +121,10 @@ export default defineSchema({
     checkIn: v.optional(v.string()),
     checkOut: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   })
     .index("by_trip", ["tripId"])
     .index("by_start_date", ["startDate"])

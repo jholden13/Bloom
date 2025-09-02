@@ -225,6 +225,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
     time: "",
     reservationNumber: "",
     notes: "",
+    status: "tentative" as const,
   });
 
   const [newLodging, setNewLodging] = useState({
@@ -234,6 +235,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
     address: "",
     city: "",
     notes: "",
+    status: "tentative" as const,
   });
 
   const createLeg = useMutation(api.tripLegs.create);
@@ -375,6 +377,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
       time: newLeg.time || undefined,
       reservationNumber: newLeg.reservationNumber || undefined,
       notes: newLeg.notes || undefined,
+      status: newLeg.status || undefined,
     });
     setNewLeg({ 
       startCity: "", 
@@ -383,7 +386,8 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
       date: "", 
       time: "", 
       reservationNumber: "", 
-      notes: "" 
+      notes: "",
+      status: "tentative"
     });
     setShowAddLegForm(false);
   };
@@ -397,6 +401,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
       address: newLodging.address || undefined,
       city: newLodging.city || undefined,
       notes: newLodging.notes || undefined,
+      status: newLodging.status || undefined,
     });
     setNewLodging({ 
       startDate: "", 
@@ -404,7 +409,8 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
       name: "", 
       address: "", 
       city: "", 
-      notes: "" 
+      notes: "",
+      status: "tentative"
     });
     setShowAddLodgingForm(false);
   };
@@ -504,7 +510,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
                 onChange={(e) => setNewLeg({ ...newLeg, endCity: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
               <select
                 className="select select-sm"
                 value={newLeg.transportation}
@@ -516,6 +522,14 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
                 <option value="bus">Bus</option>
                 <option value="boat">Boat</option>
                 <option value="other">Other</option>
+              </select>
+              <select
+                className="select select-sm"
+                value={newLeg.status}
+                onChange={(e) => setNewLeg({ ...newLeg, status: e.target.value as any })}
+              >
+                <option value="tentative">Tentative</option>
+                <option value="confirmed">Confirmed</option>
               </select>
               <input
                 type="date"
@@ -568,6 +582,17 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
               value={newLodging.name}
               onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
             />
+            <div className="mb-3">
+              <label className="text-sm font-medium text-base-content/70 mb-1 block">Status</label>
+              <select
+                className="select select-sm w-full"
+                value={newLodging.status}
+                onChange={(e) => setNewLodging({ ...newLodging, status: e.target.value as any })}
+              >
+                <option value="tentative">Tentative</option>
+                <option value="confirmed">Confirmed</option>
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium text-base-content/70">Check-in Date</label>
@@ -879,6 +904,7 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
     time: leg.time || "",
     reservationNumber: leg.reservationNumber || "",
     notes: leg.notes || "",
+    status: leg.status || "tentative",
   });
 
   const handleSave = async () => {
@@ -891,6 +917,7 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
       time: editData.time || undefined,
       reservationNumber: editData.reservationNumber || undefined,
       notes: editData.notes || undefined,
+      status: editData.status || undefined,
     });
     onSave();
   };
@@ -915,7 +942,7 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
               onChange={(e) => setEditData({ ...editData, endCity: e.target.value })}
             />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <select
               className="select select-sm"
               value={editData.transportation}
@@ -927,6 +954,14 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
               <option value="bus">Bus</option>
               <option value="boat">Boat</option>
               <option value="other">Other</option>
+            </select>
+            <select
+              className="select select-sm"
+              value={editData.status}
+              onChange={(e) => setEditData({ ...editData, status: e.target.value as any })}
+            >
+              <option value="tentative">Tentative</option>
+              <option value="confirmed">Confirmed</option>
             </select>
             <input
               type="date"
@@ -975,6 +1010,11 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
           <div className="flex items-center gap-2 mb-2">
             <IconComponent className="w-4 h-4 text-primary" />
             <span className="text-sm capitalize font-medium">{leg.transportation}</span>
+            {leg.status && (
+              <span className={`badge badge-sm ${leg.status === 'confirmed' ? 'badge-warning' : 'badge-neutral'}`}>
+                {leg.status}
+              </span>
+            )}
           </div>
           <h4 className="font-medium text-lg">
             {leg.startCity} → {leg.endCity}
@@ -1026,6 +1066,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
     notes: lodging.notes || "",
     startDate: lodging.startDate || lodging.date || "",
     endDate: lodging.endDate || lodging.date || "",
+    status: lodging.status || "tentative",
   });
 
   const handleSave = async () => {
@@ -1037,6 +1078,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
       startDate: editData.startDate || undefined,
       endDate: editData.endDate || undefined,
       notes: editData.notes || undefined,
+      status: editData.status || undefined,
     });
     onSave();
   };
@@ -1051,6 +1093,17 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
             value={editData.name}
             onChange={(e) => setEditData({ ...editData, name: e.target.value })}
           />
+          <div>
+            <label className="text-sm font-medium text-base-content/70 mb-1 block">Status</label>
+            <select
+              className="select select-sm w-full"
+              value={editData.status}
+              onChange={(e) => setEditData({ ...editData, status: e.target.value as any })}
+            >
+              <option value="tentative">Tentative</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <input
               className="input input-sm"
@@ -1112,6 +1165,11 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
           <div className="flex items-center gap-2 mb-2">
             <Hotel className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium">Lodging</span>
+            {lodging.status && (
+              <span className={`badge badge-sm ${lodging.status === 'confirmed' ? 'badge-warning' : 'badge-neutral'}`}>
+                {lodging.status}
+              </span>
+            )}
           </div>
           <h4 className="font-medium text-lg">{lodging.name}</h4>
           {(lodging.address || lodging.city) && (

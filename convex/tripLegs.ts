@@ -29,6 +29,10 @@ export const create = mutation({
     time: v.optional(v.string()),
     reservationNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   },
   handler: async (ctx, args) => {
     const existingLegs = await ctx.db
@@ -62,6 +66,10 @@ export const update = mutation({
     time: v.optional(v.string()),
     reservationNumber: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

@@ -21,6 +21,10 @@ export const create = mutation({
     address: v.optional(v.string()),
     city: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   },
   handler: async (ctx, args) => {
     // Ensure we have the required fields for the new schema
@@ -41,6 +45,10 @@ export const update = mutation({
     address: v.optional(v.string()),
     city: v.optional(v.string()),
     notes: v.optional(v.string()),
+    status: v.optional(v.union(
+      v.literal("confirmed"),
+      v.literal("tentative")
+    )),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
