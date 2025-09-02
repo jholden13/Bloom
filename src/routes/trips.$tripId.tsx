@@ -413,7 +413,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
         <h2 className="text-2xl font-bold">Trip Itinerary</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => window.print()}
+            onClick={() => window.open(`/trips/${tripId}/print`, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')}
             className="btn btn-ghost btn-sm"
             title="Print Itinerary"
           >

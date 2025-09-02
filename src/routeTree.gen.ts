@@ -18,6 +18,7 @@ import { Route as AddOutreachImport } from './routes/add-outreach'
 import { Route as IndexImport } from './routes/index'
 import { Route as TripsNewImport } from './routes/trips.new'
 import { Route as TripsTripIdImport } from './routes/trips.$tripId'
+import { Route as TripsTripIdPrintImport } from './routes/trips.$tripId.print'
 
 // Create/Update Routes
 
@@ -61,6 +62,12 @@ const TripsTripIdRoute = TripsTripIdImport.update({
   id: '/trips/$tripId',
   path: '/trips/$tripId',
   getParentRoute: () => rootRoute,
+} as any)
+
+const TripsTripIdPrintRoute = TripsTripIdPrintImport.update({
+  id: '/print',
+  path: '/print',
+  getParentRoute: () => TripsTripIdRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -116,10 +123,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsNewImport
       parentRoute: typeof rootRoute
     }
+    '/trips/$tripId/print': {
+      id: '/trips/$tripId/print'
+      path: '/print'
+      fullPath: '/trips/$tripId/print'
+      preLoaderRoute: typeof TripsTripIdPrintImport
+      parentRoute: typeof TripsTripIdImport
+    }
   }
 }
 
 // Create and export the route tree
+
+interface TripsTripIdRouteChildren {
+  TripsTripIdPrintRoute: typeof TripsTripIdPrintRoute
+}
+
+const TripsTripIdRouteChildren: TripsTripIdRouteChildren = {
+  TripsTripIdPrintRoute: TripsTripIdPrintRoute,
+}
+
+const TripsTripIdRouteWithChildren = TripsTripIdRoute._addFileChildren(
+  TripsTripIdRouteChildren,
+)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -127,8 +153,9 @@ export interface FileRoutesByFullPath {
   '/edit-outreach': typeof EditOutreachRoute
   '/meetings': typeof MeetingsRoute
   '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
+  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
+  '/trips/$tripId/print': typeof TripsTripIdPrintRoute
 }
 
 export interface FileRoutesByTo {
@@ -137,8 +164,9 @@ export interface FileRoutesByTo {
   '/edit-outreach': typeof EditOutreachRoute
   '/meetings': typeof MeetingsRoute
   '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
+  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
+  '/trips/$tripId/print': typeof TripsTripIdPrintRoute
 }
 
 export interface FileRoutesById {
@@ -148,8 +176,9 @@ export interface FileRoutesById {
   '/edit-outreach': typeof EditOutreachRoute
   '/meetings': typeof MeetingsRoute
   '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
+  '/trips/$tripId': typeof TripsTripIdRouteWithChildren
   '/trips/new': typeof TripsNewRoute
+  '/trips/$tripId/print': typeof TripsTripIdPrintRoute
 }
 
 export interface FileRouteTypes {
@@ -162,6 +191,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips/$tripId/print'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,6 +201,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips/$tripId/print'
   id:
     | '__root__'
     | '/'
@@ -180,6 +211,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips/$tripId/print'
   fileRoutesById: FileRoutesById
 }
 
@@ -189,7 +221,7 @@ export interface RootRouteChildren {
   EditOutreachRoute: typeof EditOutreachRoute
   MeetingsRoute: typeof MeetingsRoute
   PrintMeetingsRoute: typeof PrintMeetingsRoute
-  TripsTripIdRoute: typeof TripsTripIdRoute
+  TripsTripIdRoute: typeof TripsTripIdRouteWithChildren
   TripsNewRoute: typeof TripsNewRoute
 }
 
@@ -199,7 +231,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditOutreachRoute: EditOutreachRoute,
   MeetingsRoute: MeetingsRoute,
   PrintMeetingsRoute: PrintMeetingsRoute,
-  TripsTripIdRoute: TripsTripIdRoute,
+  TripsTripIdRoute: TripsTripIdRouteWithChildren,
   TripsNewRoute: TripsNewRoute,
 }
 
@@ -238,10 +270,17 @@ export const routeTree = rootRoute
       "filePath": "print-meetings.tsx"
     },
     "/trips/$tripId": {
-      "filePath": "trips.$tripId.tsx"
+      "filePath": "trips.$tripId.tsx",
+      "children": [
+        "/trips/$tripId/print"
+      ]
     },
     "/trips/new": {
       "filePath": "trips.new.tsx"
+    },
+    "/trips/$tripId/print": {
+      "filePath": "trips.$tripId.print.tsx",
+      "parent": "/trips/$tripId"
     }
   }
 }
