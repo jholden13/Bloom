@@ -138,7 +138,7 @@ function TripDetailsPage() {
         )}
         
         {!isEditing && (
-          <div className="flex justify-center">
+          <div className="flex justify-center no-print">
             <button
               onClick={() => setIsEditing(true)}
               className="btn btn-ghost btn-sm"
@@ -154,7 +154,7 @@ function TripDetailsPage() {
         <div className="lg:col-span-3">
           <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} meetings={meetings} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 no-print">
           <div className="not-prose">
             <div className="card bg-base-100 shadow">
               <div className="card-body">
@@ -413,8 +413,54 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
         <h2 className="text-2xl font-bold">Trip Itinerary</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => window.open(`/trips/${tripId}/print`, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')}
-            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              // Add print styles to hide interactive elements
+              const printStyle = document.createElement('style');
+              printStyle.innerHTML = `
+                @media print {
+                  .no-print, nav, header, footer, .btn, button, .sidebar {
+                    display: none !important;
+                  }
+                  .print-header {
+                    display: block !important;
+                    text-align: center;
+                    margin-bottom: 2rem;
+                    border-bottom: 2px solid #ccc;
+                    padding-bottom: 1rem;
+                  }
+                  body {
+                    background: white !important;
+                    color: black !important;
+                  }
+                  .prose {
+                    color: black !important;
+                  }
+                }
+              `;
+              document.head.appendChild(printStyle);
+              
+              // Add print header
+              const printHeader = document.createElement('div');
+              printHeader.className = 'print-header';
+              printHeader.style.display = 'none';
+              printHeader.innerHTML = `
+                <h1>${trip?.name || 'Trip Itinerary'}</h1>
+                ${trip?.description ? `<p>${trip.description}</p>` : ''}
+                <p><strong>${trip?.startDate || ''} ${trip?.startDate && trip?.endDate ? 'to' : ''} ${trip?.endDate || ''}</strong></p>
+                <p><em>Generated on ${new Date().toLocaleDateString()}</em></p>
+              `;
+              document.body.insertBefore(printHeader, document.body.firstChild);
+              
+              // Open print dialog
+              window.print();
+              
+              // Clean up after print
+              setTimeout(() => {
+                document.head.removeChild(printStyle);
+                document.body.removeChild(printHeader);
+              }, 1000);
+            }}
+            className="btn btn-ghost btn-sm no-print"
             title="Print Itinerary"
           >
             <Printer className="w-4 h-4" />
@@ -422,14 +468,14 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
           </button>
           <button
             onClick={() => setShowAddLegForm(true)}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm no-print"
           >
             <Plus className="w-4 h-4" />
             Add Travel
           </button>
           <button
             onClick={() => setShowAddLodgingForm(true)}
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-sm no-print"
           >
             <Plus className="w-4 h-4" />
             Add Lodging
@@ -809,7 +855,7 @@ function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave
             <p className="text-sm opacity-70 mt-2">{meeting.notes}</p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 no-print">
           <button
             onClick={onEdit}
             className="btn btn-ghost btn-xs"
@@ -950,7 +996,7 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
             <p className="text-sm opacity-70 mt-1">{leg.notes}</p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 no-print">
           <button
             onClick={onEdit}
             className="btn btn-ghost btn-xs"
@@ -1109,7 +1155,7 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
             <p className="text-sm opacity-70 mt-1">{lodging.notes}</p>
           )}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 no-print">
           <button
             onClick={onEdit}
             className="btn btn-ghost btn-xs"
