@@ -152,7 +152,7 @@ function TripDetailsPage() {
 
       <div className="grid lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
-          <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} meetings={meetings} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
+          <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} meetings={meetings} tripStartDate={trip.startDate} tripEndDate={trip.endDate} tripName={trip.name} tripDescription={trip.description} />
         </div>
         <div className="lg:col-span-1 no-print">
           <div className="not-prose">
@@ -195,13 +195,15 @@ function TripDetailsPage() {
   );
 }
 
-function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, tripEndDate }: { 
+function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, tripEndDate, tripName, tripDescription }: { 
   tripId: string; 
   legs: any[]; 
   lodging: any[]; 
   meetings: any[];
   tripStartDate?: string; 
   tripEndDate?: string; 
+  tripName?: string;
+  tripDescription?: string;
 }) {
   const [editingLeg, setEditingLeg] = useState<string | null>(null);
   const [editingLodging, setEditingLodging] = useState<string | null>(null);
@@ -444,9 +446,9 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
               printHeader.className = 'print-header';
               printHeader.style.display = 'none';
               printHeader.innerHTML = `
-                <h1>${trip?.name || 'Trip Itinerary'}</h1>
-                ${trip?.description ? `<p>${trip.description}</p>` : ''}
-                <p><strong>${trip?.startDate || ''} ${trip?.startDate && trip?.endDate ? 'to' : ''} ${trip?.endDate || ''}</strong></p>
+                <h1>${tripName || 'Trip Itinerary'}</h1>
+                ${tripDescription ? `<p>${tripDescription}</p>` : ''}
+                <p><strong>${tripStartDate || ''} ${tripStartDate && tripEndDate ? 'to' : ''} ${tripEndDate || ''}</strong></p>
                 <p><em>Generated on ${new Date().toLocaleDateString()}</em></p>
               `;
               document.body.insertBefore(printHeader, document.body.firstChild);
@@ -674,11 +676,6 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
                       <MeetingCard 
                         meeting={item} 
                         generateGoogleMapsUrl={generateGoogleMapsUrl}
-                        isEditing={editingMeeting === item._id}
-                        onEdit={() => setEditingMeeting(item._id)}
-                        onSave={() => setEditingMeeting(null)}
-                        onCancel={() => setEditingMeeting(null)}
-                        updateMeeting={updateMeeting}
                       />
                     )}
                   </div>
@@ -721,11 +718,11 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
 function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave, onCancel, updateMeeting }: { 
   meeting: any; 
   generateGoogleMapsUrl: (address: string, city?: string) => string;
-  isEditing: boolean;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  updateMeeting: any;
+  isEditing?: boolean;
+  onEdit?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  updateMeeting?: any;
 }) {
   const [editData, setEditData] = useState({
     title: meeting.title,
@@ -737,19 +734,21 @@ function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave
   });
 
   const handleSave = async () => {
-    await updateMeeting({
-      id: meeting._id,
-      title: editData.title,
-      scheduledDate: editData.scheduledDate || undefined,
-      scheduledTime: editData.scheduledTime || undefined,
-      duration: editData.duration || undefined,
-      address: editData.address || undefined,
-      notes: editData.notes || undefined,
-    });
-    onSave();
+    if (updateMeeting) {
+      await updateMeeting({
+        id: meeting._id,
+        title: editData.title,
+        scheduledDate: editData.scheduledDate || undefined,
+        scheduledTime: editData.scheduledTime || undefined,
+        duration: editData.duration || undefined,
+        address: editData.address || undefined,
+        notes: editData.notes || undefined,
+      });
+      onSave?.();
+    }
   };
 
-  if (isEditing) {
+  if (isEditing && onEdit) {
     return (
       <div className="p-4 bg-base-100 rounded-lg border-2 border-info">
         <div className="space-y-3">
@@ -855,15 +854,17 @@ function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave
             <p className="text-sm opacity-70 mt-2">{meeting.notes}</p>
           )}
         </div>
-        <div className="flex gap-1 no-print">
-          <button
-            onClick={onEdit}
-            className="btn btn-ghost btn-xs"
-            title="Edit meeting"
-          >
-            <Pencil className="w-3 h-3" />
-          </button>
-        </div>
+        {onEdit && (
+          <div className="flex gap-1 no-print">
+            <button
+              onClick={onEdit}
+              className="btn btn-ghost btn-xs"
+              title="Edit meeting"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
