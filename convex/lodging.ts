@@ -15,28 +15,31 @@ export const list = query({
 export const create = mutation({
   args: {
     tripId: v.id("trips"),
-    date: v.string(),
+    startDate: v.string(),
+    endDate: v.string(),
     name: v.string(),
     address: v.optional(v.string()),
     city: v.optional(v.string()),
-    checkIn: v.optional(v.string()),
-    checkOut: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("lodging", args);
+    // Ensure we have the required fields for the new schema
+    return await ctx.db.insert("lodging", {
+      ...args,
+      startDate: args.startDate,
+      endDate: args.endDate,
+    });
   },
 });
 
 export const update = mutation({
   args: {
     id: v.id("lodging"),
-    date: v.optional(v.string()),
-    name: v.optional(v.string()),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    name: v.string(),
     address: v.optional(v.string()),
     city: v.optional(v.string()),
-    checkIn: v.optional(v.string()),
-    checkOut: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

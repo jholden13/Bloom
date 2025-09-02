@@ -153,3 +153,113 @@ export const update = mutation({
     return id;
   },
 });
+
+
+export const syncMeetingsFromOutreach = mutation({
+  args: {
+    tripId: v.id("trips"),
+  },
+  handler: async (ctx, { tripId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    // Get all "meeting_scheduled" outreach for this trip
+    const scheduledOutreach = await ctx.db
+      .query("outreach")
+      .withIndex("by_trip", (q) => q.eq("tripId", tripId))
+      .filter((q) => q.eq(q.field("response"), "meeting_scheduled"))
+      .collect();
+
+    const createdMeetings = [];
+
+    for (const outreach of scheduledOutreach) {
+      // Check if meeting already exists for this outreach
+      const existingMeeting = await ctx.db
+        .query("meetings")
+        .filter((q) => q.eq(q.field("outreachId"), outreach._id))
+        .first();
+
+      if (!existingMeeting) {
+        // Get contact and organization info
+        const [contact, organization] = await Promise.all([
+          ctx.db.get(outreach.contactId),
+          ctx.db.get(outreach.organizationId),
+        ]);
+
+        if (contact && organization) {
+          // Parse the proposed meeting time
+          let scheduledDate = "";
+          let scheduledTime = "";
+          
+          if (outreach.proposedMeetingTime) {
+            const proposedDateTime = new Date(outreach.proposedMeetingTime);
+            scheduledDate = proposedDateTime.toISOString().split('T')[0];
+            scheduledTime = proposedDateTime.toTimeString().split(' ')[0].slice(0, 5); // HH:MM format
+          } else {
+            // Default to today if no time specified
+            const today = new Date();
+            scheduledDate = today.toISOString().split('T')[0];
+            scheduledTime = "10:00";
+          }
+
+          // Create meeting title
+          const title = `Meeting with ${contact.name} at ${organization.name}`;
+
+          // Use proposed address or default
+          const address = outreach.proposedAddress || "TBD";
+
+          const meetingId = await ctx.db.insert("meetings", {
+            tripId: outreach.tripId,
+            outreachId: outreach._id,
+            contactId: outreach.contactId,
+            organizationId: outreach.organizationId,
+            title,
+            scheduledDate,
+            scheduledTime,
+            duration: 60, // Default 60 minutes
+            address,
+            streetAddress: outreach.proposedStreetAddress,
+            city: outreach.proposedCity,
+            state: outreach.proposedState,
+            country: outreach.proposedCountry,
+            zipCode: outreach.proposedZipCode,
+            notes: outreach.notes,
+            status: "scheduled",
+          });
+          
+          createdMeetings.push(meetingId);
+        }
+      }
+    }
+
+    return createdMeetings;
+  },
+});
+
+export const deleteByOutreach = mutation({
+  args: {
+    outreachId: v.id("outreach"),
+  },
+  handler: async (ctx, { outreachId }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    // Find and delete any meetings associated with this outreach
+    const meetings = await ctx.db
+      .query("meetings")
+      .filter((q) => q.eq(q.field("outreachId"), outreachId))
+      .collect();
+
+    const deletedMeetingIds = [];
+    for (const meeting of meetings) {
+      await ctx.db.delete(meeting._id);
+      deletedMeetingIds.push(meeting._id);
+    }
+
+    return deletedMeetingIds;
+  },
+});

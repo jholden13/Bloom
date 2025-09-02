@@ -117,6 +117,8 @@ export const updateResponse = mutation({
 export const update = mutation({
   args: {
     id: v.id("outreach"),
+    contactId: v.optional(v.id("contacts")),
+    organizationId: v.optional(v.id("organizations")),
     notes: v.optional(v.string()),
     proposedAddress: v.optional(v.string()),
     proposedStreetAddress: v.optional(v.string()),

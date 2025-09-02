@@ -105,14 +105,20 @@ export default defineSchema({
 
   lodging: defineTable({
     tripId: v.id("trips"),
-    date: v.string(),
+    // Legacy field for migration compatibility
+    date: v.optional(v.string()),
+    // New fields for date ranges
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
     name: v.string(),
     address: v.optional(v.string()),
     city: v.optional(v.string()),
+    // Legacy time fields for migration compatibility
     checkIn: v.optional(v.string()),
     checkOut: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_trip", ["tripId"])
+    .index("by_start_date", ["startDate"])
     .index("by_date", ["date"]),
 });

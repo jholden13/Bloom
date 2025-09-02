@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Calendar, MapPin, Plus, Pencil, Users, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Plus, Pencil, Users, ArrowLeft, Trash2 } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 import { z } from "zod";
 
@@ -14,21 +14,24 @@ const meetingsSearchSchema = z.object({
 export const Route = createFileRoute("/meetings")({
   component: MeetingsPage,
   validateSearch: meetingsSearchSchema,
-  loader: async ({ context: { queryClient }, search }) => {
-    const tripId = search.tripId;
+  loaderDeps: ({ search }) => ({ tripId: search?.tripId }),
+  loader: async ({ context: { queryClient }, deps }) => {
+    const tripId = deps?.tripId;
     
     if (!tripId) {
       throw new Error("Trip ID is required");
     }
     
     try {
-      const [trip, meetings, outreach] = await Promise.all([
+      const [trip, meetings, outreach, contacts, organizations] = await Promise.all([
         queryClient.ensureQueryData(convexQuery(api.trips.get, { id: tripId as any })),
         queryClient.ensureQueryData(convexQuery(api.meetings.list, { tripId: tripId as any })),
         queryClient.ensureQueryData(convexQuery(api.outreach.list, { tripId: tripId as any })),
+        queryClient.ensureQueryData(convexQuery(api.contacts.list, {})),
+        queryClient.ensureQueryData(convexQuery(api.organizations.list, {})),
       ]);
 
-      return { trip, meetings, outreach };
+      return { trip, meetings, outreach, contacts, organizations };
     } catch (error) {
       console.error("Error loading meetings data:", error);
       throw error;
@@ -38,9 +41,7 @@ export const Route = createFileRoute("/meetings")({
 
 function MeetingsPage() {
   const search = Route.useSearch();
-  console.log("Search object:", search);
   const tripId = search.tripId;
-  console.log("Trip ID:", tripId);
   
   if (!tripId) {
     return (
@@ -57,6 +58,8 @@ function MeetingsPage() {
   const { data: trip } = useSuspenseQuery(convexQuery(api.trips.get, { id: tripId as any }));
   const { data: meetings } = useSuspenseQuery(convexQuery(api.meetings.list, { tripId: tripId as any }));
   const { data: outreach } = useSuspenseQuery(convexQuery(api.outreach.list, { tripId: tripId as any }));
+  const { data: contacts } = useSuspenseQuery(convexQuery(api.contacts.list, {}));
+  const { data: organizations } = useSuspenseQuery(convexQuery(api.organizations.list, {}));
 
   if (!trip) {
     return <div>Trip not found...</div>;
@@ -79,7 +82,7 @@ function MeetingsPage() {
         </div>
       </div>
 
-      <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} />
+      <MeetingsSection tripId={tripId} meetings={meetings} outreach={outreach} contacts={contacts} organizations={organizations} />
     </div>
   );
 }
@@ -163,11 +166,195 @@ function MeetingEditCard({ meeting, onSave, onCancel, updateMeeting }: any) {
   );
 }
 
-function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meetings: any[]; outreach: any[] }) {
+function OutreachEditCard({ outreach, onSave, onCancel, updateOutreach, contacts, organizations }: any) {
+  const [editData, setEditData] = useState({
+    companyName: outreach.organization?.name || "",
+    personName: outreach.contact?.name || "",
+    personEmail: outreach.contact?.email || "",
+    meetingDate: outreach.proposedMeetingTime ? outreach.proposedMeetingTime.split('T')[0] : "",
+    meetingTime: outreach.proposedMeetingTime ? new Date(outreach.proposedMeetingTime).toTimeString().split(' ')[0].slice(0, 5) : "",
+    notes: outreach.notes || "",
+    proposedAddress: outreach.proposedAddress || "",
+    proposedStreetAddress: outreach.proposedStreetAddress || "",
+    proposedCity: outreach.proposedCity || "",
+    proposedState: outreach.proposedState || "",
+    proposedCountry: outreach.proposedCountry || "",
+    proposedZipCode: outreach.proposedZipCode || "",
+  });
+
+  const updateContact = useMutation(api.contacts.update);
+  const updateOrganization = useMutation(api.organizations.update);
+
+
+
+  const handleSave = async () => {
+    // Update the organization name if changed
+    if (editData.companyName && editData.companyName !== outreach.organization?.name) {
+      await updateOrganization({
+        id: outreach.organizationId,
+        name: editData.companyName,
+      });
+    }
+
+    // Update the contact name and email if changed
+    if (editData.personName !== outreach.contact?.name || editData.personEmail !== outreach.contact?.email) {
+      await updateContact({
+        id: outreach.contactId,
+        name: editData.personName || undefined,
+        email: editData.personEmail || undefined,
+      });
+    }
+
+    // Combine date and time into proposedMeetingTime if both are provided
+    let proposedMeetingTime;
+    if (editData.meetingDate && editData.meetingTime) {
+      proposedMeetingTime = `${editData.meetingDate}T${editData.meetingTime}:00`;
+    }
+
+    // Update the outreach record
+    await updateOutreach({
+      id: outreach._id,
+      notes: editData.notes || undefined,
+      proposedAddress: editData.proposedAddress || undefined,
+      proposedStreetAddress: editData.proposedStreetAddress || undefined,
+      proposedCity: editData.proposedCity || undefined,
+      proposedState: editData.proposedState || undefined,
+      proposedCountry: editData.proposedCountry || undefined,
+      proposedZipCode: editData.proposedZipCode || undefined,
+      proposedMeetingTime: proposedMeetingTime || undefined,
+    });
+    onSave();
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Company and Person Information */}
+      <div className="space-y-2">
+        <input
+          className="input input-sm w-full"
+          placeholder="Company Name"
+          value={editData.companyName}
+          onChange={(e) => setEditData({ ...editData, companyName: e.target.value })}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            className="input input-sm"
+            placeholder="Person Name"
+            value={editData.personName}
+            onChange={(e) => setEditData({ ...editData, personName: e.target.value })}
+          />
+          <input
+            className="input input-sm"
+            placeholder="Email Address"
+            value={editData.personEmail}
+            onChange={(e) => setEditData({ ...editData, personEmail: e.target.value })}
+          />
+        </div>
+      </div>
+
+      {/* Meeting Date and Time */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-sm font-medium text-base-content/70">Meeting Date</label>
+          <input
+            type="date"
+            className="input input-sm w-full"
+            value={editData.meetingDate}
+            onChange={(e) => setEditData({ ...editData, meetingDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-base-content/70">Meeting Time</label>
+          <input
+            type="time"
+            className="input input-sm w-full"
+            value={editData.meetingTime}
+            onChange={(e) => setEditData({ ...editData, meetingTime: e.target.value })}
+          />
+        </div>
+      </div>
+
+      {/* Address Fields */}
+      <div className="space-y-2">
+        <input
+          className="input input-sm w-full"
+          placeholder="Address"
+          value={editData.proposedAddress}
+          onChange={(e) => setEditData({ ...editData, proposedAddress: e.target.value })}
+        />
+        <input
+          className="input input-sm w-full"
+          placeholder="Street Address"
+          value={editData.proposedStreetAddress}
+          onChange={(e) => setEditData({ ...editData, proposedStreetAddress: e.target.value })}
+        />
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            className="input input-sm"
+            placeholder="City"
+            value={editData.proposedCity}
+            onChange={(e) => setEditData({ ...editData, proposedCity: e.target.value })}
+          />
+          <input
+            className="input input-sm"
+            placeholder="State"
+            value={editData.proposedState}
+            onChange={(e) => setEditData({ ...editData, proposedState: e.target.value })}
+          />
+          <input
+            className="input input-sm"
+            placeholder="ZIP Code"
+            value={editData.proposedZipCode}
+            onChange={(e) => setEditData({ ...editData, proposedZipCode: e.target.value })}
+          />
+        </div>
+        <input
+          className="input input-sm w-full"
+          placeholder="Country"
+          value={editData.proposedCountry}
+          onChange={(e) => setEditData({ ...editData, proposedCountry: e.target.value })}
+        />
+      </div>
+
+
+      {/* Notes */}
+      <textarea
+        className="textarea textarea-sm"
+        placeholder="Notes"
+        value={editData.notes}
+        onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+        rows={3}
+      />
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 justify-end">
+        <button onClick={onCancel} className="btn btn-ghost btn-xs">
+          Cancel
+        </button>
+        <button onClick={() => void handleSave()} className="btn btn-primary btn-xs">
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MeetingsSection({ tripId, meetings, outreach, contacts, organizations }: { tripId: string; meetings: any[]; outreach: any[]; contacts: any[]; organizations: any[] }) {
   const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
-  const [showAddMeetingForm, setShowAddMeetingForm] = useState(false);
+  const [editingOutreach, setEditingOutreach] = useState<string | null>(null);
+
+  // Helper function to generate Google Maps URL
+  const generateGoogleMapsUrl = (address: string, city?: string, state?: string, country?: string) => {
+    const fullAddress = [address, city, state, country].filter(Boolean).join(', ');
+    return `https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`;
+  };
 
   const updateMeeting = useMutation(api.meetings.update);
+  const updateOutreach = useMutation(api.outreach.update);
+  const updateOutreachResponse = useMutation(api.outreach.updateResponse);
+  const deleteOutreach = useMutation(api.outreach.deleteOutreach);
+  const syncMeetingsFromOutreach = useMutation(api.meetings.syncMeetingsFromOutreach);
+  const deleteMeetingsByOutreach = useMutation(api.meetings.deleteByOutreach);
 
   const outreachCounts = {
     pending: outreach.filter(o => o.response === "pending").length,
@@ -177,60 +364,67 @@ function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meeti
     meeting_scheduled: outreach.filter(o => o.response === "meeting_scheduled").length,
   };
 
+  const handleSyncMeetings = async () => {
+    try {
+      const createdMeetings = await syncMeetingsFromOutreach({ tripId: tripId as any });
+      if (createdMeetings.length > 0) {
+        alert(`Successfully created ${createdMeetings.length} meetings in your trip itinerary!`);
+      } else {
+        alert("No new meetings to sync - all meeting_scheduled outreach items already have meetings.");
+      }
+    } catch (error) {
+      console.error("Failed to sync meetings:", error);
+      alert("Failed to sync meetings. Please try again.");
+    }
+  };
+
+  const handleStatusChange = async (outreachId: string, newStatus: string) => {
+    try {
+      // Find the current outreach item to check its current status
+      const currentOutreach = outreach.find(o => o._id === outreachId);
+      const wasScheduled = currentOutreach?.response === "meeting_scheduled";
+      const isScheduled = newStatus === "meeting_scheduled";
+      
+      // If changing FROM "meeting_scheduled" TO something else, delete associated meeting
+      if (wasScheduled && !isScheduled) {
+        await deleteMeetingsByOutreach({ outreachId: outreachId as any });
+        console.log("Deleted meeting associated with outreach");
+      }
+      
+      // Update the outreach status
+      await updateOutreachResponse({
+        id: outreachId as any,
+        response: newStatus as any,
+        responseDate: new Date().toISOString().split('T')[0],
+      });
+    } catch (error) {
+      console.error("Failed to update outreach status:", error);
+    }
+  };
+
   return (
     <div className="not-prose">
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-4">
-          <button
-            onClick={() => setShowAddMeetingForm(true)}
-            className="btn btn-primary btn-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Meeting
-          </button>
           <Link 
             to="/add-outreach" 
             search={{ tripId }} 
-            className="btn btn-outline btn-sm no-underline"
+            className="btn btn-primary btn-sm no-underline"
           >
             <Plus className="w-4 h-4" />
             Add Outreach
           </Link>
+          <button
+            onClick={() => void handleSyncMeetings()}
+            className="btn btn-secondary btn-sm"
+            title="Sync meetings from meeting_scheduled outreach"
+          >
+            <Calendar className="w-4 h-4" />
+            Sync Meetings
+          </button>
         </div>
       </div>
 
-      {/* Add Meeting Form */}
-      {showAddMeetingForm && (
-        <div className="card bg-base-100 shadow mb-4">
-          <div className="card-body">
-            <h3 className="card-title">Add Meeting</h3>
-            <div className="alert alert-info mb-4">
-              <div className="flex">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <div>
-                  <h3 className="font-bold">How to add meetings</h3>
-                  <div className="text-sm">
-                    Meetings are created through the outreach process:
-                    <ol className="list-decimal list-inside mt-2 space-y-1">
-                      <li>Create outreach to contacts/organizations</li>
-                      <li>When they respond positively, schedule a meeting</li>
-                      <li>The meeting will appear here automatically</li>
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="card-actions justify-end">
-              <button onClick={() => setShowAddMeetingForm(false)} className="btn btn-ghost btn-sm">
-                Got it
-              </button>
-              <Link to="/add-outreach" search={{ tripId }} className="btn btn-primary btn-sm no-underline">
-                Create Outreach
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Outreach Status Bar */}
       {outreach.length > 0 && (
@@ -283,74 +477,6 @@ function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meeti
         </div>
       )}
 
-      {/* Meetings List */}
-      {meetings.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-3">Meetings</h3>
-          <div className="space-y-3">
-            {meetings.map((meeting) => (
-              <div key={meeting._id} className="p-4 bg-base-100 rounded-lg">
-                {editingMeeting === meeting._id ? (
-                  <MeetingEditCard 
-                    meeting={meeting} 
-                    onSave={() => setEditingMeeting(null)}
-                    onCancel={() => setEditingMeeting(null)}
-                    updateMeeting={updateMeeting}
-                  />
-                ) : (
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4 text-primary" />
-                        <h4 className="font-medium text-lg">{meeting.title}</h4>
-                        <div className={`badge badge-sm ${
-                          meeting.status === 'scheduled' ? 'badge-warning' :
-                          meeting.status === 'confirmed' ? 'badge-info' :
-                          meeting.status === 'completed' ? 'badge-success' :
-                          'badge-error'
-                        }`}>
-                          {meeting.status}
-                        </div>
-                      </div>
-                      <div className="space-y-1 text-sm opacity-70">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {meeting.scheduledDate} at {meeting.scheduledTime}
-                          {meeting.duration && ` (${meeting.duration} min)`}
-                        </div>
-                        {meeting.address && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {meeting.address}
-                            {meeting.city && `, ${meeting.city}`}
-                          </div>
-                        )}
-                        {meeting.contact && (
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {meeting.contact.name} ({meeting.contact.email})
-                            {meeting.organization && ` • ${meeting.organization.name}`}
-                          </div>
-                        )}
-                        {meeting.notes && <p className="mt-1">{meeting.notes}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setEditingMeeting(meeting._id)}
-                        className="btn btn-ghost btn-xs"
-                        title="Edit meeting"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Outreach List */}
       {outreach.length > 0 && (
@@ -359,42 +485,95 @@ function MeetingsSection({ tripId, meetings, outreach }: { tripId: string; meeti
           <div className="space-y-3">
             {outreach.map((item) => (
               <div key={item._id} className="p-4 bg-base-100 rounded-lg">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`badge badge-sm ${
-                        item.response === 'pending' ? 'badge-warning' :
-                        item.response === 'interested' ? 'badge-info' :
-                        item.response === 'not_interested' ? 'badge-neutral' :
-                        item.response === 'no_response' ? 'badge-error' :
-                        'badge-success'
-                      }`}>
-                        {item.response.replace('_', ' ')}
+                {editingOutreach === item._id ? (
+                  <OutreachEditCard 
+                    outreach={item} 
+                    onSave={() => setEditingOutreach(null)}
+                    onCancel={() => setEditingOutreach(null)}
+                    updateOutreach={updateOutreach}
+                    contacts={contacts}
+                    organizations={organizations}
+                  />
+                ) : (
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <select
+                          value={item.response}
+                          onChange={(e) => void handleStatusChange(item._id, e.target.value)}
+                          className={`select select-xs ${
+                            item.response === 'pending' ? 'select-warning' :
+                            item.response === 'interested' ? 'select-info' :
+                            item.response === 'not_interested' ? 'select-neutral' :
+                            item.response === 'no_response' ? 'select-error' :
+                            'select-success'
+                          }`}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="interested">Interested</option>
+                          <option value="not_interested">Not Interested</option>
+                          <option value="no_response">No Response</option>
+                          <option value="meeting_scheduled">Meeting Scheduled</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1 text-sm opacity-70">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Reached out on {item.outreachDate}
+                        </div>
+                        {item.contact && (
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {item.contact.name} ({item.contact.email})
+                            {item.organization && ` • ${item.organization.name}`}
+                          </div>
+                        )}
+                        {item.proposedAddress && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <a 
+                              href={generateGoogleMapsUrl(
+                                item.proposedAddress, 
+                                item.proposedCity, 
+                                item.proposedState, 
+                                item.proposedCountry
+                              )}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {item.proposedAddress}
+                              {item.proposedCity && `, ${item.proposedCity}`}
+                            </a>
+                          </div>
+                        )}
+                        {item.proposedMeetingTime && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Proposed time: {item.proposedMeetingTime}
+                          </div>
+                        )}
+                        {item.notes && <p className="mt-1">{item.notes}</p>}
                       </div>
                     </div>
-                    <div className="space-y-1 text-sm opacity-70">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Reached out on {item.outreachDate}
-                      </div>
-                      {item.contact && (
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {item.contact.name} ({item.contact.email})
-                          {item.organization && ` • ${item.organization.name}`}
-                        </div>
-                      )}
-                      {item.proposedAddress && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {item.proposedAddress}
-                          {item.proposedCity && `, ${item.proposedCity}`}
-                        </div>
-                      )}
-                      {item.notes && <p className="mt-1">{item.notes}</p>}
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setEditingOutreach(item._id)}
+                        className="btn btn-ghost btn-xs"
+                        title="Edit outreach"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => void deleteOutreach({ id: item._id })}
+                        className="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                        title="Delete outreach"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

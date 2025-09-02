@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useState } from "react";
-import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Pencil, Hotel, Clock, Users } from "lucide-react";
+import { Calendar, MapPin, Plane, Train, Car, Bus, Ship, Plus, CheckCircle, Trash2, Pencil, Hotel, Clock, Users, Printer } from "lucide-react";
 import { api } from "../../convex/_generated/api";
 
 const transportationIcons: Record<string, React.ComponentType<any>> = {
@@ -152,7 +152,7 @@ function TripDetailsPage() {
 
       <div className="grid lg:grid-cols-4 gap-6">
         <div className="lg:col-span-3">
-          <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
+          <TripItinerarySection tripId={tripId} legs={tripLegs} lodging={lodging} meetings={meetings} tripStartDate={trip.startDate} tripEndDate={trip.endDate} />
         </div>
         <div className="lg:col-span-1">
           <div className="not-prose">
@@ -170,21 +170,21 @@ function TripDetailsPage() {
                       <div className="stat-value text-lg">{outreach.length}</div>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => navigate({ to: "/meetings", search: { tripId } })}
-                    className="btn btn-primary btn-sm w-full"
-                  >
-                    <Users className="w-4 h-4" />
-                    Manage Meetings
-                  </button>
                   <Link 
                     to="/add-outreach" 
                     search={{ tripId }} 
-                    className="btn btn-outline btn-sm w-full no-underline"
+                    className="btn btn-primary btn-sm w-full no-underline"
                   >
                     <Plus className="w-4 h-4" />
                     Add Outreach
                   </Link>
+                  <button 
+                    onClick={() => navigate({ to: "/meetings", search: { tripId } })}
+                    className="btn btn-outline btn-sm w-full"
+                  >
+                    <Users className="w-4 h-4" />
+                    Manage Outreach
+                  </button>
                 </div>
               </div>
             </div>
@@ -195,17 +195,25 @@ function TripDetailsPage() {
   );
 }
 
-function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDate }: { 
+function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, tripEndDate }: { 
   tripId: string; 
   legs: any[]; 
   lodging: any[]; 
+  meetings: any[];
   tripStartDate?: string; 
   tripEndDate?: string; 
 }) {
   const [editingLeg, setEditingLeg] = useState<string | null>(null);
   const [editingLodging, setEditingLodging] = useState<string | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<string | null>(null);
   const [showAddLegForm, setShowAddLegForm] = useState(false);
   const [showAddLodgingForm, setShowAddLodgingForm] = useState(false);
+
+  // Helper function to generate Google Maps URL
+  const generateGoogleMapsUrl = (address: string, city?: string) => {
+    const fullAddress = [address, city].filter(Boolean).join(', ');
+    return `https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`;
+  };
   
   const [newLeg, setNewLeg] = useState({
     startCity: "",
@@ -218,12 +226,11 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
   });
 
   const [newLodging, setNewLodging] = useState({
-    date: "",
+    startDate: "",
+    endDate: "",
     name: "",
     address: "",
     city: "",
-    checkIn: "",
-    checkOut: "",
     notes: "",
   });
 
@@ -233,6 +240,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
   const createLodging = useMutation(api.lodging.create);
   const updateLodging = useMutation(api.lodging.update);
   const deleteLodging = useMutation(api.lodging.remove);
+  const updateMeeting = useMutation(api.meetings.update);
 
   const getTripDays = () => {
     if (!tripStartDate || !tripEndDate) return [];
@@ -256,11 +264,47 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
   const tripDays = getTripDays();
 
   const organizeByDays = () => {
+    // Helper function to check if lodging covers a specific date
+    const lodgingCoversDate = (stay: any, date: string) => {
+      // Handle legacy data format
+      if (stay.date && !stay.startDate) {
+        return stay.date === date;
+      }
+      
+      // Handle new date range format
+      if (!stay.startDate) return false;
+      const stayStart = new Date(stay.startDate);
+      const stayEnd = stay.endDate ? new Date(stay.endDate) : stayStart;
+      const checkDate = new Date(date);
+      return checkDate >= stayStart && checkDate <= stayEnd;
+    };
+
     if (tripDays.length === 0) {
-      const allDates = [
-        ...legs.map(l => l.date).filter(Boolean),
-        ...lodging.map(l => l.date).filter(Boolean)
-      ];
+      // Collect all dates from legs, lodging date ranges, and meetings
+      const legDates = legs.map(l => l.date).filter(Boolean);
+      const meetingDates = meetings.map(m => m.scheduledDate).filter(Boolean);
+      
+      // For lodging, collect all dates in the range
+      const lodgingDates: string[] = [];
+      lodging.forEach(stay => {
+        // Handle legacy data format
+        if (stay.date && !stay.startDate) {
+          lodgingDates.push(stay.date);
+        }
+        // Handle new date range format
+        else if (stay.startDate) {
+          const startDate = new Date(stay.startDate);
+          const endDate = stay.endDate ? new Date(stay.endDate) : startDate;
+          const currentDate = new Date(startDate);
+          
+          while (currentDate <= endDate) {
+            lodgingDates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+        }
+      });
+      
+      const allDates = [...legDates, ...lodgingDates, ...meetingDates];
       const uniqueDates = [...new Set(allDates)].sort();
       
       return uniqueDates.map(date => ({
@@ -268,18 +312,46 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
         dayNumber: null,
         items: [
           ...legs.filter(l => l.date === date).map(l => ({ ...l, type: 'leg' })),
-          ...lodging.filter(l => l.date === date).map(l => ({ ...l, type: 'lodging' }))
+          ...lodging.filter(stay => lodgingCoversDate(stay, date)).map(stay => ({ ...stay, type: 'lodging' })),
+          ...meetings.filter(m => m.scheduledDate === date).map(m => ({ ...m, type: 'meeting' }))
         ]
       }));
     }
 
-    return tripDays.map(day => {
+    // Get all meeting dates to include additional days if needed
+    const meetingDates = meetings.map(m => m.scheduledDate).filter(Boolean);
+    const allTripDays = [...tripDays];
+    
+    // Add additional days for meetings outside the trip range
+    meetingDates.forEach(meetingDate => {
+      const meetingDateObj = new Date(meetingDate);
+      const tripStart = new Date(tripStartDate);
+      const tripEnd = new Date(tripEndDate);
+      
+      if (meetingDateObj < tripStart || meetingDateObj > tripEnd) {
+        // Check if this date is already in our days
+        const existingDay = allTripDays.find(d => d.date === meetingDate);
+        if (!existingDay) {
+          allTripDays.push({
+            date: meetingDate,
+            dayNumber: null, // No day number for dates outside trip range
+          });
+        }
+      }
+    });
+    
+    // Sort all days by date
+    allTripDays.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    return allTripDays.map(day => {
       const dayLegs = legs.filter(leg => leg.date === day.date);
-      const dayLodging = lodging.filter(stay => stay.date === day.date);
+      const dayLodging = lodging.filter(stay => lodgingCoversDate(stay, day.date));
+      const dayMeetings = meetings.filter(meeting => meeting.scheduledDate === day.date);
       
       const items = [
         ...dayLegs.map(leg => ({ ...leg, type: 'leg' })),
-        ...dayLodging.map(stay => ({ ...stay, type: 'lodging' }))
+        ...dayLodging.map(stay => ({ ...stay, type: 'lodging' })),
+        ...dayMeetings.map(meeting => ({ ...meeting, type: 'meeting' }))
       ];
       
       return {
@@ -317,21 +389,19 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
   const handleAddLodging = async () => {
     await createLodging({
       tripId: tripId as any,
-      date: newLodging.date,
+      startDate: newLodging.startDate,
+      endDate: newLodging.endDate,
       name: newLodging.name,
       address: newLodging.address || undefined,
       city: newLodging.city || undefined,
-      checkIn: newLodging.checkIn || undefined,
-      checkOut: newLodging.checkOut || undefined,
       notes: newLodging.notes || undefined,
     });
     setNewLodging({ 
-      date: "", 
+      startDate: "", 
+      endDate: "", 
       name: "", 
       address: "", 
       city: "", 
-      checkIn: "", 
-      checkOut: "", 
       notes: "" 
     });
     setShowAddLodgingForm(false);
@@ -342,6 +412,14 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Trip Itinerary</h2>
         <div className="flex gap-2">
+          <button
+            onClick={() => window.print()}
+            className="btn btn-ghost btn-sm"
+            title="Print Itinerary"
+          >
+            <Printer className="w-4 h-4" />
+            Print
+          </button>
           <button
             onClick={() => setShowAddLegForm(true)}
             className="btn btn-primary btn-sm"
@@ -436,20 +514,31 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
         <div className="card bg-base-100 shadow mb-6">
           <div className="card-body">
             <h3 className="card-title">Add Lodging</h3>
+            <input
+              className="input input-sm w-full mb-3"
+              placeholder="Hotel/Place name"
+              value={newLodging.name}
+              onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
+            />
             <div className="grid grid-cols-2 gap-3">
-              <input
-                type="date"
-                className="input input-sm"
-                placeholder="Date"
-                value={newLodging.date}
-                onChange={(e) => setNewLodging({ ...newLodging, date: e.target.value })}
-              />
-              <input
-                className="input input-sm"
-                placeholder="Hotel/Place name"
-                value={newLodging.name}
-                onChange={(e) => setNewLodging({ ...newLodging, name: e.target.value })}
-              />
+              <div>
+                <label className="text-sm font-medium text-base-content/70">Check-in Date</label>
+                <input
+                  type="date"
+                  className="input input-sm w-full"
+                  value={newLodging.startDate}
+                  onChange={(e) => setNewLodging({ ...newLodging, startDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-base-content/70">Check-out Date</label>
+                <input
+                  type="date"
+                  className="input input-sm w-full"
+                  value={newLodging.endDate}
+                  onChange={(e) => setNewLodging({ ...newLodging, endDate: e.target.value })}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <input
@@ -463,22 +552,6 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
                 placeholder="City (optional)"
                 value={newLodging.city}
                 onChange={(e) => setNewLodging({ ...newLodging, city: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="time"
-                className="input input-sm"
-                placeholder="Check-in time"
-                value={newLodging.checkIn}
-                onChange={(e) => setNewLodging({ ...newLodging, checkIn: e.target.value })}
-              />
-              <input
-                type="time"
-                className="input input-sm"
-                placeholder="Check-out time"
-                value={newLodging.checkOut}
-                onChange={(e) => setNewLodging({ ...newLodging, checkOut: e.target.value })}
               />
             </div>
             <textarea
@@ -525,7 +598,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
             <div className="ml-12 space-y-3">
               {day.items.length === 0 ? (
                 <div className="text-center py-4 opacity-50">
-                  <p>No travel or lodging planned for this day</p>
+                  <p>No travel, lodging, or meetings planned for this day</p>
                 </div>
               ) : (
                 day.items.map((item) => (
@@ -540,7 +613,7 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
                         onDelete={() => void deleteLeg({ id: item._id })}
                         updateLeg={updateLeg}
                       />
-                    ) : (
+                    ) : item.type === 'lodging' ? (
                       <LodgingCard
                         lodging={item}
                         isEditing={editingLodging === item._id}
@@ -549,6 +622,17 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
                         onCancel={() => setEditingLodging(null)}
                         onDelete={() => void deleteLodging({ id: item._id })}
                         updateLodging={updateLodging}
+                        generateGoogleMapsUrl={generateGoogleMapsUrl}
+                      />
+                    ) : (
+                      <MeetingCard 
+                        meeting={item} 
+                        generateGoogleMapsUrl={generateGoogleMapsUrl}
+                        isEditing={editingMeeting === item._id}
+                        onEdit={() => setEditingMeeting(item._id)}
+                        onSave={() => setEditingMeeting(null)}
+                        onCancel={() => setEditingMeeting(null)}
+                        updateMeeting={updateMeeting}
                       />
                     )}
                   </div>
@@ -583,6 +667,157 @@ function TripItinerarySection({ tripId, legs, lodging, tripStartDate, tripEndDat
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave, onCancel, updateMeeting }: { 
+  meeting: any; 
+  generateGoogleMapsUrl: (address: string, city?: string) => string;
+  isEditing: boolean;
+  onEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  updateMeeting: any;
+}) {
+  const [editData, setEditData] = useState({
+    title: meeting.title,
+    scheduledDate: meeting.scheduledDate || "",
+    scheduledTime: meeting.scheduledTime || "",
+    duration: meeting.duration || 60,
+    address: meeting.address || "",
+    notes: meeting.notes || "",
+  });
+
+  const handleSave = async () => {
+    await updateMeeting({
+      id: meeting._id,
+      title: editData.title,
+      scheduledDate: editData.scheduledDate || undefined,
+      scheduledTime: editData.scheduledTime || undefined,
+      duration: editData.duration || undefined,
+      address: editData.address || undefined,
+      notes: editData.notes || undefined,
+    });
+    onSave();
+  };
+
+  if (isEditing) {
+    return (
+      <div className="p-4 bg-base-100 rounded-lg border-2 border-info">
+        <div className="space-y-3">
+          <input
+            className="input input-sm w-full"
+            placeholder="Meeting title"
+            value={editData.title}
+            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              type="date"
+              className="input input-sm"
+              value={editData.scheduledDate}
+              onChange={(e) => setEditData({ ...editData, scheduledDate: e.target.value })}
+            />
+            <input
+              type="time"
+              className="input input-sm"
+              value={editData.scheduledTime}
+              onChange={(e) => setEditData({ ...editData, scheduledTime: e.target.value })}
+            />
+            <input
+              type="number"
+              className="input input-sm"
+              placeholder="Duration (min)"
+              value={editData.duration}
+              onChange={(e) => setEditData({ ...editData, duration: parseInt(e.target.value) || 60 })}
+            />
+          </div>
+          <input
+            className="input input-sm w-full"
+            placeholder="Address"
+            value={editData.address}
+            onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+          />
+          <textarea
+            className="textarea textarea-sm"
+            placeholder="Notes (optional)"
+            value={editData.notes}
+            onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
+            rows={2}
+          />
+        </div>
+        <div className="flex gap-2 justify-end mt-3">
+          <button onClick={onCancel} className="btn btn-ghost btn-xs">
+            Cancel
+          </button>
+          <button onClick={() => void handleSave()} className="btn btn-info btn-xs">
+            Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 bg-base-100 rounded-lg border-l-4 border-l-info">
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-info" />
+            <span className="text-sm font-medium">Meeting</span>
+            <div className={`badge badge-sm ${
+              meeting.status === 'scheduled' ? 'badge-success' :
+              meeting.status === 'confirmed' ? 'badge-info' :
+              meeting.status === 'completed' ? 'badge-success' :
+              'badge-error'
+            }`}>
+              {meeting.status}
+            </div>
+          </div>
+          <h4 className="font-medium text-lg mb-1">{meeting.title}</h4>
+          <div className="space-y-1 text-sm opacity-70">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {meeting.scheduledTime}
+              {meeting.duration && ` (${meeting.duration} min)`}
+            </div>
+            {meeting.address && meeting.address !== 'TBD' && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                <a 
+                  href={generateGoogleMapsUrl(meeting.address, meeting.city)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {meeting.address}
+                  {meeting.city && `, ${meeting.city}`}
+                </a>
+              </div>
+            )}
+            {meeting.contact && (
+              <div className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {meeting.contact.name} ({meeting.contact.email})
+                {meeting.organization && ` • ${meeting.organization.name}`}
+              </div>
+            )}
+          </div>
+          {meeting.notes && (
+            <p className="text-sm opacity-70 mt-2">{meeting.notes}</p>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={onEdit}
+            className="btn btn-ghost btn-xs"
+            title="Edit meeting"
+          >
+            <Pencil className="w-3 h-3" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -736,15 +971,14 @@ function TravelLegCard({ leg, isEditing, onEdit, onSave, onCancel, onDelete, upd
   );
 }
 
-function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, updateLodging }: any) {
+function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, updateLodging, generateGoogleMapsUrl }: any) {
   const [editData, setEditData] = useState({
     name: lodging.name,
     address: lodging.address || "",
     city: lodging.city || "",
-    checkIn: lodging.checkIn || "",
-    checkOut: lodging.checkOut || "",
     notes: lodging.notes || "",
-    date: lodging.date,
+    startDate: lodging.startDate || lodging.date || "",
+    endDate: lodging.endDate || lodging.date || "",
   });
 
   const handleSave = async () => {
@@ -753,8 +987,8 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
       name: editData.name,
       address: editData.address || undefined,
       city: editData.city || undefined,
-      checkIn: editData.checkIn || undefined,
-      checkOut: editData.checkOut || undefined,
+      startDate: editData.startDate || undefined,
+      endDate: editData.endDate || undefined,
       notes: editData.notes || undefined,
     });
     onSave();
@@ -785,20 +1019,24 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input
-              type="time"
-              className="input input-sm"
-              placeholder="Check-in time"
-              value={editData.checkIn}
-              onChange={(e) => setEditData({ ...editData, checkIn: e.target.value })}
-            />
-            <input
-              type="time"
-              className="input input-sm"
-              placeholder="Check-out time"
-              value={editData.checkOut}
-              onChange={(e) => setEditData({ ...editData, checkOut: e.target.value })}
-            />
+            <div>
+              <label className="text-sm font-medium text-base-content/70">Check-in Date</label>
+              <input
+                type="date"
+                className="input input-sm w-full"
+                value={editData.startDate}
+                onChange={(e) => setEditData({ ...editData, startDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-base-content/70">Check-out Date</label>
+              <input
+                type="date"
+                className="input input-sm w-full"
+                value={editData.endDate}
+                onChange={(e) => setEditData({ ...editData, endDate: e.target.value })}
+              />
+            </div>
           </div>
           <textarea
             className="textarea textarea-sm"
@@ -829,18 +1067,42 @@ function LodgingCard({ lodging, isEditing, onEdit, onSave, onCancel, onDelete, u
             <span className="text-sm font-medium">Lodging</span>
           </div>
           <h4 className="font-medium text-lg">{lodging.name}</h4>
-          {lodging.city && (
+          {(lodging.address || lodging.city) && (
             <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
               <MapPin className="w-3 h-3" />
-              {lodging.address ? `${lodging.address}, ${lodging.city}` : lodging.city}
+              {lodging.address ? (
+                <a 
+                  href={generateGoogleMapsUrl(lodging.address, lodging.city)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {lodging.address}{lodging.city && `, ${lodging.city}`}
+                </a>
+              ) : lodging.city ? (
+                <a 
+                  href={generateGoogleMapsUrl(lodging.city)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {lodging.city}
+                </a>
+              ) : null}
             </div>
           )}
-          {(lodging.checkIn || lodging.checkOut) && (
+          {(lodging.startDate || lodging.endDate || lodging.date) && (
             <div className="flex items-center gap-1 text-sm opacity-70 mt-1">
-              <Clock className="w-3 h-3" />
-              {lodging.checkIn && `Check-in: ${lodging.checkIn}`}
-              {lodging.checkIn && lodging.checkOut && " | "}
-              {lodging.checkOut && `Check-out: ${lodging.checkOut}`}
+              <Calendar className="w-3 h-3" />
+              {lodging.startDate ? (
+                <>
+                  {new Date(lodging.startDate).toLocaleDateString()}
+                  {lodging.endDate && lodging.startDate !== lodging.endDate && 
+                    ` - ${new Date(lodging.endDate).toLocaleDateString()}`}
+                </>
+              ) : lodging.date ? (
+                new Date(lodging.date).toLocaleDateString()
+              ) : null}
             </div>
           )}
           {lodging.notes && (
