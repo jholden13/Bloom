@@ -70,7 +70,7 @@ function TripDetailsPage() {
   }
 
   return (
-    <div className="prose prose-invert max-w-none">
+    <div className="prose prose-invert max-w-7xl mx-auto">
       <div className="text-center mb-8">
         {isEditing ? (
           <div className="not-prose space-y-4 max-w-2xl mx-auto">
@@ -329,8 +329,8 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
     // Add additional days for meetings outside the trip range
     meetingDates.forEach(meetingDate => {
       const meetingDateObj = new Date(meetingDate);
-      const tripStart = new Date(tripStartDate);
-      const tripEnd = new Date(tripEndDate);
+      const tripStart = tripStartDate ? new Date(tripStartDate) : new Date();
+      const tripEnd = tripEndDate ? new Date(tripEndDate) : new Date();
       
       if (meetingDateObj < tripStart || meetingDateObj > tripEnd) {
         // Check if this date is already in our days
@@ -338,7 +338,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
         if (!existingDay) {
           allTripDays.push({
             date: meetingDate,
-            dayNumber: null, // No day number for dates outside trip range
+            dayNumber: 0, // No day number for dates outside trip range
           });
         }
       }
