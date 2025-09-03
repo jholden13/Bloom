@@ -23,18 +23,8 @@ function HomePage() {
       <h1>Trip Planner</h1>
       <p className="text-lg opacity-80 mb-6">Plan your trips with detailed travel legs and daily accommodations</p>
 
-      <Unauthenticated>
-        <p>Sign in to start planning your trips.</p>
-        <div className="not-prose mt-4">
-          <SignInButton mode="modal">
-            <button className="btn btn-primary btn-lg">Get Started</button>
-          </SignInButton>
-        </div>
-      </Unauthenticated>
-
-      <Authenticated>
-        <TripsDashboard />
-      </Authenticated>
+      {/* Always show trips dashboard (no auth required for demo) */}
+      <TripsDashboard />
     </div>
   );
 }
