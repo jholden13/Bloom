@@ -75,10 +75,12 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     // Update the related outreach to "meeting_scheduled"
     await ctx.db.patch(args.outreachId, {
@@ -160,10 +162,12 @@ export const syncMeetingsFromOutreach = mutation({
     tripId: v.id("trips"),
   },
   handler: async (ctx, { tripId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     // Get all "meeting_scheduled" outreach for this trip
     const scheduledOutreach = await ctx.db
@@ -243,10 +247,12 @@ export const deleteByOutreach = mutation({
     outreachId: v.id("outreach"),
   },
   handler: async (ctx, { outreachId }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     // Find and delete any meetings associated with this outreach
     const meetings = await ctx.db

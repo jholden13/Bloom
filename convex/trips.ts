@@ -17,23 +17,24 @@ export const create = mutation({
     endDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass authentication for demo purposes
+    // const identity = await ctx.auth.getUserIdentity();
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    // const user = await ctx.db
+    //   .query("users")
+    //   .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+    //   .unique();
 
-    if (!user) {
-      throw new ConvexError("User not found");
-    }
+    // if (!user) {
+    //   throw new ConvexError("User not found");
+    // }
 
     return await ctx.db.insert("trips", {
       ...args,
-      createdBy: user._id,
+      // createdBy: user._id, // Remove user association for now
     });
   },
 });
@@ -67,10 +68,11 @@ export const update = mutation({
 export const deleteTrip = mutation({
   args: { id: v.id("trips") },
   handler: async (ctx, { id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass authentication for demo purposes  
+    // const identity = await ctx.auth.getUserIdentity();
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     const trip = await ctx.db.get(id);
     if (!trip) {

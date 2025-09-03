@@ -12,7 +12,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
-    createdBy: v.id("users"),
+    createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
 
   organizations: defineTable({
@@ -34,7 +34,7 @@ export default defineSchema({
     contactId: v.id("contacts"),
     organizationId: v.id("organizations"),
     outreachDate: v.string(),
-    reachedOutBy: v.id("users"),
+    reachedOutBy: v.optional(v.id("users")), // Made optional for demo without auth
     response: v.union(
       v.literal("pending"),
       v.literal("interested"),

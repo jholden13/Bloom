@@ -48,8 +48,8 @@ function RootComponent() {
       <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
         <QueryClientProvider client={queryClient}>
           <div className="min-h-screen flex flex-col">
-            <Authenticated>
-              <EnsureUser />
+            {/* Bypass authentication - always show authenticated layout */}
+            <div>
               {/* Mobile sidebar drawer */}
               <div className="drawer min-h-screen">
                 <input
@@ -73,7 +73,7 @@ function RootComponent() {
                         to="/"
                         className="btn btn-ghost normal-case text-xl"
                       >
-                        Fullstack Vibe Coding
+                        Trip Planner
                       </Link>
                     </div>
                     <div className="navbar-center hidden lg:flex">
@@ -91,7 +91,7 @@ function RootComponent() {
                       </nav>
                     </div>
                     <div className="navbar-end">
-                      <UserButton />
+                      {/* Removed UserButton */}
                     </div>
                   </header>
                   {/* Main content */}
@@ -99,7 +99,7 @@ function RootComponent() {
                     <Outlet />
                   </main>
                   <footer className="footer footer-center p-4 text-base-content">
-                    <p>© {new Date().getFullYear()} Fullstack Vibe Coding</p>
+                    <p>© {new Date().getFullYear()} Trip Planner</p>
                   </footer>
                 </div>
                 {/* Sidebar content for mobile */}
@@ -127,40 +127,10 @@ function RootComponent() {
                         </li>
                       </ul>
                     </div>
-                    <div className="mt-auto py-4 border-t border-base-300 flex justify-center items-center">
-                      <UserButton />
-                    </div>
                   </div>
                 </div>
               </div>
-            </Authenticated>
-            <Unauthenticated>
-              <header className="navbar bg-base-100 shadow-sm border-b border-base-300">
-                <div className="container mx-auto flex justify-between w-full">
-                  <div className="navbar-start">
-                    <h1 className="font-semibold">Fullstack Vibe Coding</h1>
-                  </div>
-                  <div className="navbar-end">
-                    <SignInButton mode="modal">
-                      <button className="btn btn-primary btn-sm">
-                        Sign in
-                      </button>
-                    </SignInButton>
-                    <SignUpButton mode="modal">
-                      <button className="btn btn-ghost btn-sm ml-2">
-                        Sign up
-                      </button>
-                    </SignUpButton>
-                  </div>
-                </div>
-              </header>
-              <main className="flex-1 container mx-auto p-4 prose prose-invert max-w-none">
-                <Outlet />
-              </main>
-              <footer className="footer footer-center p-4 text-base-content">
-                <p>© {new Date().getFullYear()} Fullstack Vibe Coding</p>
-              </footer>
-            </Unauthenticated>
+            </div>
           </div>
           {import.meta.env.DEV && <TanStackRouterDevtools />}
         </QueryClientProvider>

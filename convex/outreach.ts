@@ -36,7 +36,7 @@ export const list = query({
         const [contact, organization, user] = await Promise.all([
           ctx.db.get(item.contactId),
           ctx.db.get(item.organizationId),
-          ctx.db.get(item.reachedOutBy),
+          item.reachedOutBy ? ctx.db.get(item.reachedOutBy) : null,
         ]);
 
         return {
@@ -68,23 +68,26 @@ export const create = mutation({
     proposedMeetingTime: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+    // Bypass user lookup for demo
+    // const user = await ctx.db
+    //   .query("users")
+    //   .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+    //   .unique();
 
-    if (!user) {
-      throw new ConvexError("User not found");
-    }
+    // if (!user) {
+    //   throw new ConvexError("User not found");
+    // }
 
     return await ctx.db.insert("outreach", {
       ...args,
-      reachedOutBy: user._id,
+      // reachedOutBy: user._id, // Bypass user for demo
       response: "pending",
     });
   },
@@ -129,10 +132,12 @@ export const update = mutation({
     proposedMeetingTime: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     const outreach = await ctx.db.get(id);
     if (!outreach) {
@@ -172,10 +177,12 @@ export const getSummary = query({
 export const deleteOutreach = mutation({
   args: { id: v.id("outreach") },
   handler: async (ctx, { id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
-    }
+    // Bypass auth for demo
+    // const identity = await ctx.auth.getUserIdentity();
+    // Bypass auth for demo
+    // if (!identity) {
+    //   throw new ConvexError("Not authenticated");
+    // }
 
     const outreach = await ctx.db.get(id);
     if (!outreach) {
