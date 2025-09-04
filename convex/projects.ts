@@ -21,13 +21,15 @@ export const create = mutation({
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    startDate: v.optional(v.string()),
   },
-  handler: async (ctx, { name, description, analyst, researchAssociate }) => {
+  handler: async (ctx, { name, description, analyst, researchAssociate, startDate }) => {
     return await ctx.db.insert("projects", {
       name,
       description,
       analyst,
       researchAssociate,
+      startDate,
     });
   },
 });
@@ -39,13 +41,15 @@ export const update = mutation({
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    startDate: v.optional(v.string()),
   },
-  handler: async (ctx, { id, name, description, analyst, researchAssociate }) => {
+  handler: async (ctx, { id, name, description, analyst, researchAssociate, startDate }) => {
     const updates: any = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (analyst !== undefined) updates.analyst = analyst;
     if (researchAssociate !== undefined) updates.researchAssociate = researchAssociate;
+    if (startDate !== undefined) updates.startDate = startDate;
     
     return await ctx.db.patch(id, updates);
   },

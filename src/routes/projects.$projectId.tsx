@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Plus, User, Trash2, Edit3, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, Plus, User, Trash2, Edit3, Calendar, DollarSign, Edit } from "lucide-react";
 import { api } from "../../convex/_generated/api.js";
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -87,7 +87,7 @@ function ProjectDetailPage() {
             {project.description && (
               <p className="opacity-80 mb-3">{project.description}</p>
             )}
-            <div className="flex gap-4 text-sm">
+            <div className="flex flex-wrap gap-2 text-sm">
               {project.analyst && (
                 <div className="badge badge-outline">
                   <span className="font-semibold mr-1">Analyst:</span>
@@ -100,14 +100,29 @@ function ProjectDetailPage() {
                   {project.researchAssociate}
                 </div>
               )}
+              {project.startDate && (
+                <div className="badge badge-outline">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  <span className="font-semibold mr-1">Start:</span>
+                  {new Date(project.startDate).toLocaleDateString()}
+                </div>
+              )}
             </div>
           </div>
-          <Link to={`/projects/${projectId}/experts/new`}>
-            <button className="btn btn-primary">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Expert
-            </button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={`/projects/${projectId}/edit`}>
+              <button className="btn btn-outline">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Project
+              </button>
+            </Link>
+            <Link to={`/projects/${projectId}/experts/new`}>
+              <button className="btn btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Expert
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
 

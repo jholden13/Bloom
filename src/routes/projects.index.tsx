@@ -67,6 +67,11 @@ function ProjectsPage() {
                         <span className="font-semibold">Research Associate:</span> {project.researchAssociate}
                       </div>
                     )}
+                    {project.startDate && (
+                      <div className="text-sm">
+                        <span className="font-semibold">Start Date:</span> {new Date(project.startDate).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
                   <div className="card-actions justify-end">
                     <div className="badge badge-outline">

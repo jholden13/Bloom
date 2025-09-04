@@ -1,12 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { convexQuery } from "@convex-dev/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "../../convex/_generated/api.js";
 import { z } from "zod";
 
-export const Route = createFileRoute("/projects/new")({
-  component: NewProjectPage,
+export const Route = createFileRoute("/projects/$projectId/edit")({
+  component: EditProjectPage,
+  loader: async ({ context: { queryClient }, params }) => {
+    const projectQuery = convexQuery(api.projects.get, { id: params.projectId });
+    await queryClient.ensureQueryData(projectQuery);
+  },
 });
 
 const schema = z.object({
@@ -17,9 +23,17 @@ const schema = z.object({
   startDate: z.string().optional(),
 });
 
-function NewProjectPage() {
+function EditProjectPage() {
+  const { projectId } = Route.useParams();
   const navigate = useNavigate();
-  const createProject = useMutation(api.projects.create);
+  const updateProject = useMutation(api.projects.update);
+
+  const projectQuery = convexQuery(api.projects.get, { id: projectId });
+  const { data: project } = useSuspenseQuery(projectQuery);
+
+  if (!project) {
+    return <div>Project not found</div>;
+  }
 
   const analystOptions = [
     "John Smith",
@@ -45,17 +59,18 @@ function NewProjectPage() {
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      description: "",
-      analyst: "",
-      researchAssociate: "",
-      startDate: "",
+      name: project.name || "",
+      description: project.description || "",
+      analyst: project.analyst || "",
+      researchAssociate: project.researchAssociate || "",
+      startDate: project.startDate || "",
     },
     validators: {
       onChange: schema,
     },
     onSubmit: async ({ value }) => {
-      const projectId = await createProject({
+      await updateProject({
+        id: projectId,
         name: value.name,
         description: value.description || undefined,
         analyst: value.analyst || undefined,
@@ -70,14 +85,14 @@ function NewProjectPage() {
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <button
-          onClick={() => navigate({ to: "/projects" })}
+          onClick={() => navigate({ to: `/projects/${projectId}` })}
           className="btn btn-ghost mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Projects
+          Back to Project
         </button>
-        <h1 className="text-3xl font-bold mb-2">Create New Project</h1>
-        <p className="opacity-80">Set up a new project to manage expert consultations</p>
+        <h1 className="text-3xl font-bold mb-2">Edit Project</h1>
+        <p className="opacity-80">Update project details and assignments</p>
       </div>
 
       <form
@@ -208,7 +223,7 @@ function NewProjectPage() {
         <div className="flex justify-end space-x-4">
           <button
             type="button"
-            onClick={() => navigate({ to: "/projects" })}
+            onClick={() => navigate({ to: `/projects/${projectId}` })}
             className="btn btn-ghost"
             disabled={form.state.isSubmitting}
           >
@@ -219,7 +234,7 @@ function NewProjectPage() {
             className="btn btn-primary"
             disabled={!form.state.canSubmit || form.state.isSubmitting}
           >
-            {form.state.isSubmitting ? "Creating..." : "Create Project"}
+            {form.state.isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>

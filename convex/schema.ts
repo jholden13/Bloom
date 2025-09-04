@@ -12,6 +12,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    startDate: v.optional(v.string()), // ISO date string (YYYY-MM-DD)
     createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
 
