@@ -10,6 +10,8 @@ export default defineSchema({
   projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
+    analyst: v.optional(v.string()),
+    researchAssociate: v.optional(v.string()),
     createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
 

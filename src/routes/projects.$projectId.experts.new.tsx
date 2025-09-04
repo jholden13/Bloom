@@ -4,7 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "convex/react";
 import { ArrowLeft } from "lucide-react";
-import { api } from "../../../convex/_generated/api.js";
+import { api } from "../../convex/_generated/api.js";
 import { z } from "zod";
 
 export const Route = createFileRoute("/projects/$projectId/experts/new")({

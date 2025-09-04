@@ -54,8 +54,20 @@ function ProjectsPage() {
                   </div>
                   <h2 className="card-title text-xl mb-2">{project.name}</h2>
                   {project.description && (
-                    <p className="opacity-70 mb-4">{project.description}</p>
+                    <p className="opacity-70 mb-3">{project.description}</p>
                   )}
+                  <div className="space-y-1 mb-4">
+                    {project.analyst && (
+                      <div className="text-sm">
+                        <span className="font-semibold">Analyst:</span> {project.analyst}
+                      </div>
+                    )}
+                    {project.researchAssociate && (
+                      <div className="text-sm">
+                        <span className="font-semibold">Research Associate:</span> {project.researchAssociate}
+                      </div>
+                    )}
+                  </div>
                   <div className="card-actions justify-end">
                     <div className="badge badge-outline">
                       View Details

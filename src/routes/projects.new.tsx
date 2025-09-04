@@ -12,16 +12,42 @@ export const Route = createFileRoute("/projects/new")({
 const schema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
+  analyst: z.string().optional(),
+  researchAssociate: z.string().optional(),
 });
 
 function NewProjectPage() {
   const navigate = useNavigate();
   const createProject = useMutation(api.projects.create);
 
+  const analystOptions = [
+    "John Smith",
+    "Sarah Johnson", 
+    "Michael Chen",
+    "Emily Davis",
+    "David Wilson",
+    "Jessica Brown",
+    "Robert Taylor",
+    "Lisa Anderson"
+  ];
+
+  const researchAssociateOptions = [
+    "Alex Thompson",
+    "Maria Garcia",
+    "James Rodriguez",
+    "Anna Lee",
+    "Kevin Martinez",
+    "Sophie Clark",
+    "Daniel Lewis",
+    "Rachel Green"
+  ];
+
   const form = useForm({
     defaultValues: {
       name: "",
       description: "",
+      analyst: "",
+      researchAssociate: "",
     },
     validators: {
       onChange: schema,
@@ -30,6 +56,8 @@ function NewProjectPage() {
       const projectId = await createProject({
         name: value.name,
         description: value.description || undefined,
+        analyst: value.analyst || undefined,
+        researchAssociate: value.researchAssociate || undefined,
       });
       navigate({ to: `/projects/${projectId}` });
     },
@@ -102,6 +130,58 @@ function NewProjectPage() {
             </div>
           )}
         />
+
+        <div className="grid grid-cols-2 gap-4">
+          <form.Field
+            name="analyst"
+            children={(field) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Analyst</span>
+                  <span className="label-text-alt opacity-70">(optional)</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                >
+                  <option value="">Select an analyst</option>
+                  {analystOptions.map((analyst) => (
+                    <option key={analyst} value={analyst}>
+                      {analyst}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          />
+
+          <form.Field
+            name="researchAssociate"
+            children={(field) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Research Associate</span>
+                  <span className="label-text-alt opacity-70">(optional)</span>
+                </label>
+                <select
+                  className="select select-bordered w-full"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                >
+                  <option value="">Select a research associate</option>
+                  {researchAssociateOptions.map((associate) => (
+                    <option key={associate} value={associate}>
+                      {associate}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end space-x-4">
           <button

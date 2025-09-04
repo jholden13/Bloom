@@ -85,8 +85,22 @@ function ProjectDetailPage() {
           <div>
             <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
             {project.description && (
-              <p className="opacity-80">{project.description}</p>
+              <p className="opacity-80 mb-3">{project.description}</p>
             )}
+            <div className="flex gap-4 text-sm">
+              {project.analyst && (
+                <div className="badge badge-outline">
+                  <span className="font-semibold mr-1">Analyst:</span>
+                  {project.analyst}
+                </div>
+              )}
+              {project.researchAssociate && (
+                <div className="badge badge-outline">
+                  <span className="font-semibold mr-1">Research Associate:</span>
+                  {project.researchAssociate}
+                </div>
+              )}
+            </div>
           </div>
           <Link to={`/projects/${projectId}/experts/new`}>
             <button className="btn btn-primary">
