@@ -15,8 +15,11 @@ import { Route as IndexImport } from './routes/index'
 import { Route as ProjectsIndexImport } from './routes/projects.index'
 import { Route as ProjectsNewImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdImport } from './routes/projects.$projectId'
+import { Route as ProjectsProjectIdIndexImport } from './routes/projects.$projectId.index'
 import { Route as ProjectsProjectIdEditImport } from './routes/projects.$projectId.edit'
+import { Route as ProjectsProjectIdNetworkGroupsNewImport } from './routes/projects.$projectId.network-groups.new'
 import { Route as ProjectsProjectIdExpertsNewImport } from './routes/projects.$projectId.experts.new'
+import { Route as ProjectsProjectIdExpertsExpertIdEditImport } from './routes/projects.$projectId.experts.$expertId.edit'
 
 // Create/Update Routes
 
@@ -44,16 +47,36 @@ const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProjectsProjectIdIndexRoute = ProjectsProjectIdIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+
 const ProjectsProjectIdEditRoute = ProjectsProjectIdEditImport.update({
   id: '/edit',
   path: '/edit',
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
 
+const ProjectsProjectIdNetworkGroupsNewRoute =
+  ProjectsProjectIdNetworkGroupsNewImport.update({
+    id: '/network-groups/new',
+    path: '/network-groups/new',
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+
 const ProjectsProjectIdExpertsNewRoute =
   ProjectsProjectIdExpertsNewImport.update({
     id: '/experts/new',
     path: '/experts/new',
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+
+const ProjectsProjectIdExpertsExpertIdEditRoute =
+  ProjectsProjectIdExpertsExpertIdEditImport.update({
+    id: '/experts/$expertId/edit',
+    path: '/experts/$expertId/edit',
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
 
@@ -96,11 +119,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdEditImport
       parentRoute: typeof ProjectsProjectIdImport
     }
+    '/projects/$projectId/': {
+      id: '/projects/$projectId/'
+      path: '/'
+      fullPath: '/projects/$projectId/'
+      preLoaderRoute: typeof ProjectsProjectIdIndexImport
+      parentRoute: typeof ProjectsProjectIdImport
+    }
     '/projects/$projectId/experts/new': {
       id: '/projects/$projectId/experts/new'
       path: '/experts/new'
       fullPath: '/projects/$projectId/experts/new'
       preLoaderRoute: typeof ProjectsProjectIdExpertsNewImport
+      parentRoute: typeof ProjectsProjectIdImport
+    }
+    '/projects/$projectId/network-groups/new': {
+      id: '/projects/$projectId/network-groups/new'
+      path: '/network-groups/new'
+      fullPath: '/projects/$projectId/network-groups/new'
+      preLoaderRoute: typeof ProjectsProjectIdNetworkGroupsNewImport
+      parentRoute: typeof ProjectsProjectIdImport
+    }
+    '/projects/$projectId/experts/$expertId/edit': {
+      id: '/projects/$projectId/experts/$expertId/edit'
+      path: '/experts/$expertId/edit'
+      fullPath: '/projects/$projectId/experts/$expertId/edit'
+      preLoaderRoute: typeof ProjectsProjectIdExpertsExpertIdEditImport
       parentRoute: typeof ProjectsProjectIdImport
     }
   }
@@ -110,12 +154,20 @@ declare module '@tanstack/react-router' {
 
 interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdEditRoute: typeof ProjectsProjectIdEditRoute
+  ProjectsProjectIdIndexRoute: typeof ProjectsProjectIdIndexRoute
   ProjectsProjectIdExpertsNewRoute: typeof ProjectsProjectIdExpertsNewRoute
+  ProjectsProjectIdNetworkGroupsNewRoute: typeof ProjectsProjectIdNetworkGroupsNewRoute
+  ProjectsProjectIdExpertsExpertIdEditRoute: typeof ProjectsProjectIdExpertsExpertIdEditRoute
 }
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
   ProjectsProjectIdEditRoute: ProjectsProjectIdEditRoute,
+  ProjectsProjectIdIndexRoute: ProjectsProjectIdIndexRoute,
   ProjectsProjectIdExpertsNewRoute: ProjectsProjectIdExpertsNewRoute,
+  ProjectsProjectIdNetworkGroupsNewRoute:
+    ProjectsProjectIdNetworkGroupsNewRoute,
+  ProjectsProjectIdExpertsExpertIdEditRoute:
+    ProjectsProjectIdExpertsExpertIdEditRoute,
 }
 
 const ProjectsProjectIdRouteWithChildren =
@@ -127,16 +179,21 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
+  '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
+  '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
+  '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
+  '/projects/$projectId': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
+  '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
+  '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
 }
 
 export interface FileRoutesById {
@@ -146,7 +203,10 @@ export interface FileRoutesById {
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
+  '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
+  '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
+  '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
 }
 
 export interface FileRouteTypes {
@@ -157,15 +217,20 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/projects'
     | '/projects/$projectId/edit'
+    | '/projects/$projectId/'
     | '/projects/$projectId/experts/new'
+    | '/projects/$projectId/network-groups/new'
+    | '/projects/$projectId/experts/$expertId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/projects/$projectId'
     | '/projects/new'
     | '/projects'
     | '/projects/$projectId/edit'
+    | '/projects/$projectId'
     | '/projects/$projectId/experts/new'
+    | '/projects/$projectId/network-groups/new'
+    | '/projects/$projectId/experts/$expertId/edit'
   id:
     | '__root__'
     | '/'
@@ -173,7 +238,10 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/projects/'
     | '/projects/$projectId/edit'
+    | '/projects/$projectId/'
     | '/projects/$projectId/experts/new'
+    | '/projects/$projectId/network-groups/new'
+    | '/projects/$projectId/experts/$expertId/edit'
   fileRoutesById: FileRoutesById
 }
 
@@ -214,7 +282,10 @@ export const routeTree = rootRoute
       "filePath": "projects.$projectId.tsx",
       "children": [
         "/projects/$projectId/edit",
-        "/projects/$projectId/experts/new"
+        "/projects/$projectId/",
+        "/projects/$projectId/experts/new",
+        "/projects/$projectId/network-groups/new",
+        "/projects/$projectId/experts/$expertId/edit"
       ]
     },
     "/projects/new": {
@@ -227,8 +298,20 @@ export const routeTree = rootRoute
       "filePath": "projects.$projectId.edit.tsx",
       "parent": "/projects/$projectId"
     },
+    "/projects/$projectId/": {
+      "filePath": "projects.$projectId.index.tsx",
+      "parent": "/projects/$projectId"
+    },
     "/projects/$projectId/experts/new": {
       "filePath": "projects.$projectId.experts.new.tsx",
+      "parent": "/projects/$projectId"
+    },
+    "/projects/$projectId/network-groups/new": {
+      "filePath": "projects.$projectId.network-groups.new.tsx",
+      "parent": "/projects/$projectId"
+    },
+    "/projects/$projectId/experts/$expertId/edit": {
+      "filePath": "projects.$projectId.experts.$expertId.edit.tsx",
       "parent": "/projects/$projectId"
     }
   }

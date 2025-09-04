@@ -7,15 +7,16 @@ import { ArrowLeft } from "lucide-react";
 import { api } from "@/../convex/_generated/api.js";
 import { z } from "zod";
 
-export const Route = createFileRoute("/projects/$projectId/experts/new")({
-  component: NewExpertPage,
+export const Route = createFileRoute("/projects/$projectId/experts/$expertId/edit")({
+  component: EditExpertPage,
   loader: async ({ context: { queryClient }, params }) => {
+    const expertQuery = convexQuery(api.experts.get, { id: params.expertId });
     const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId });
-    await queryClient.ensureQueryData(networkGroupsQuery);
+    await Promise.all([
+      queryClient.ensureQueryData(expertQuery),
+      queryClient.ensureQueryData(networkGroupsQuery),
+    ]);
   },
-  validateSearch: (search) => ({
-    networkGroupId: search.networkGroupId as string | undefined,
-  }),
 });
 
 const schema = z.object({
@@ -27,23 +28,28 @@ const schema = z.object({
   notes: z.string().optional(),
 });
 
-function NewExpertPage() {
-  const { projectId } = Route.useParams();
-  const { networkGroupId } = Route.useSearch();
+function EditExpertPage() {
+  const { projectId, expertId } = Route.useParams();
   const navigate = useNavigate();
-  const createExpert = useMutation(api.experts.create);
+  const updateExpert = useMutation(api.experts.update);
 
+  const expertQuery = convexQuery(api.experts.get, { id: expertId });
   const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId });
+  const { data: expert } = useSuspenseQuery(expertQuery);
   const { data: networkGroups } = useSuspenseQuery(networkGroupsQuery);
+
+  if (!expert) {
+    return <div>Expert not found</div>;
+  }
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      biography: "",
-      networkGroupId: networkGroupId || "",
-      cost: "",
-      status: "pending review" as const,
-      notes: "",
+      name: expert.name,
+      biography: expert.biography || "",
+      networkGroupId: expert.networkGroupId || "",
+      cost: expert.cost ? expert.cost.toString() : "",
+      status: expert.status,
+      notes: expert.notes || "",
     },
     validators: {
       onChange: schema.transform((data) => ({
@@ -56,9 +62,9 @@ function NewExpertPage() {
     },
     onSubmit: async ({ value }) => {
       try {
-        console.log('Form submission started with value:', value);
-        await createExpert({
-          projectId,
+        console.log('Updating expert with value:', value);
+        await updateExpert({
+          id: expertId,
           networkGroupId: value.networkGroupId || undefined,
           name: value.name,
           biography: value.biography || undefined,
@@ -66,10 +72,10 @@ function NewExpertPage() {
           status: value.status,
           notes: value.notes || undefined,
         });
-        console.log('Expert created successfully, navigating...');
+        console.log('Expert updated successfully, navigating...');
         navigate({ to: `/projects/${projectId}` });
       } catch (error) {
-        console.error('Error creating expert:', error);
+        console.error('Error updating expert:', error);
       }
     },
   });
@@ -91,8 +97,8 @@ function NewExpertPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Project
         </button>
-        <h1 className="text-3xl font-bold mb-2">Add New Expert</h1>
-        <p className="opacity-80">Add a new expert to your project</p>
+        <h1 className="text-3xl font-bold mb-2">Edit Expert</h1>
+        <p className="opacity-80">Update expert information</p>
       </div>
 
       <form
@@ -224,7 +230,6 @@ function NewExpertPage() {
           )}
         />
 
-
         <form.Field
           name="notes"
           children={(field) => (
@@ -258,7 +263,7 @@ function NewExpertPage() {
             className="btn btn-primary"
             disabled={!form.state.canSubmit || form.state.isSubmitting}
           >
-            {form.state.isSubmitting ? "Adding..." : "Add Expert"}
+            {form.state.isSubmitting ? "Updating..." : "Update Expert"}
           </button>
         </div>
       </form>

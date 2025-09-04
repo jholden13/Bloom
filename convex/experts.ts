@@ -11,6 +11,16 @@ export const listByProject = query({
   },
 });
 
+export const listByNetworkGroup = query({
+  args: { networkGroupId: v.id("expertNetworkGroups") },
+  handler: async (ctx, { networkGroupId }) => {
+    return await ctx.db
+      .query("experts")
+      .withIndex("by_network_group", (q) => q.eq("networkGroupId", networkGroupId))
+      .collect();
+  },
+});
+
 export const listByStatus = query({
   args: { 
     projectId: v.optional(v.id("projects")),
@@ -43,19 +53,16 @@ export const get = query({
 export const create = mutation({
   args: {
     projectId: v.id("projects"),
+    networkGroupId: v.optional(v.id("expertNetworkGroups")),
     name: v.string(),
     biography: v.optional(v.string()),
-    network: v.string(),
     cost: v.optional(v.number()),
-    costCurrency: v.optional(v.string()),
     status: v.union(
       v.literal("rejected"),
       v.literal("pending review"),
       v.literal("maybe"),
       v.literal("schedule call")
     ),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -66,19 +73,16 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("experts"),
+    networkGroupId: v.optional(v.id("expertNetworkGroups")),
     name: v.optional(v.string()),
     biography: v.optional(v.string()),
-    network: v.optional(v.string()),
     cost: v.optional(v.number()),
-    costCurrency: v.optional(v.string()),
     status: v.optional(v.union(
       v.literal("rejected"),
       v.literal("pending review"),
       v.literal("maybe"),
       v.literal("schedule call")
     )),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
@@ -111,11 +115,3 @@ export const remove = mutation({
   },
 });
 
-export const getNetworks = query({
-  args: {},
-  handler: async (ctx) => {
-    const experts = await ctx.db.query("experts").collect();
-    const networks = [...new Set(experts.map(expert => expert.network))];
-    return networks.sort();
-  },
-});

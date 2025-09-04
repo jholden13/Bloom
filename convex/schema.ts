@@ -16,11 +16,18 @@ export default defineSchema({
     createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
 
-  experts: defineTable({
+  expertNetworkGroups: defineTable({
     projectId: v.id("projects"),
     name: v.string(),
+    description: v.optional(v.string()),
+  })
+    .index("by_project", ["projectId"]),
+
+  experts: defineTable({
+    projectId: v.id("projects"),
+    networkGroupId: v.optional(v.id("expertNetworkGroups")),
+    name: v.string(),
     biography: v.optional(v.string()),
-    network: v.string(),
     cost: v.optional(v.number()),
     costCurrency: v.optional(v.string()),
     status: v.union(
@@ -29,13 +36,11 @@ export default defineSchema({
       v.literal("maybe"),
       v.literal("schedule call")
     ),
-    email: v.optional(v.string()),
-    phone: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_project", ["projectId"])
-    .index("by_status", ["status"])
-    .index("by_network", ["network"]),
+    .index("by_network_group", ["networkGroupId"])
+    .index("by_status", ["status"]),
 
   calls: defineTable({
     projectId: v.id("projects"),

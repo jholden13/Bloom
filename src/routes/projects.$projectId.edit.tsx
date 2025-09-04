@@ -32,7 +32,19 @@ function EditProjectPage() {
   const { data: project } = useSuspenseQuery(projectQuery);
 
   if (!project) {
-    return <div>Project not found</div>;
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-4">Project not found</h1>
+          <button
+            onClick={() => navigate({ to: "/projects" })}
+            className="btn btn-primary"
+          >
+            Back to Projects
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const analystOptions = [
@@ -122,7 +134,7 @@ function EditProjectPage() {
               {!field.state.meta.isValid && (
                 <label className="label">
                   <span className="label-text-alt text-error">
-                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                    {field.state.meta.errors.map((e: any) => e.message).join(", ")}
                   </span>
                 </label>
               )}
