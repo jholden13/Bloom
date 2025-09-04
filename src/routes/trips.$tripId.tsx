@@ -212,8 +212,8 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
   const [showAddLodgingForm, setShowAddLodgingForm] = useState(false);
 
   // Helper function to generate Google Maps URL for addresses
-  const generateGoogleMapsUrl = (address: string, city?: string) => {
-    const fullAddress = [address, city].filter(Boolean).join(', ');
+  const generateGoogleMapsUrl = (address: string, city?: string, state?: string, country?: string) => {
+    const fullAddress = [address, city, state, country].filter(Boolean).join(', ');
     return `https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`;
   };
   
@@ -853,17 +853,24 @@ function MeetingCard({ meeting, generateGoogleMapsUrl, isEditing, onEdit, onSave
               {meeting.scheduledTime}
               {meeting.duration && ` (${meeting.duration} min)`}
             </div>
-            {meeting.address && meeting.address !== 'TBD' && (
+            {((meeting.streetAddress && meeting.streetAddress !== 'TBD') || (meeting.address && meeting.address !== 'TBD')) && (
               <div className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />
                 <a 
-                  href={generateGoogleMapsUrl(meeting.address, meeting.city)}
+                  href={generateGoogleMapsUrl(
+                    meeting.streetAddress || meeting.address, 
+                    meeting.city, 
+                    meeting.state, 
+                    meeting.country
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  {meeting.address}
+                  {meeting.streetAddress || meeting.address}
                   {meeting.city && `, ${meeting.city}`}
+                  {meeting.state && `, ${meeting.state}`}
+                  {meeting.zipCode && ` ${meeting.zipCode}`}
                 </a>
               </div>
             )}
