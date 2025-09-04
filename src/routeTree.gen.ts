@@ -17,6 +17,7 @@ import { Route as ProjectsNewImport } from './routes/projects.new'
 import { Route as ProjectsProjectIdImport } from './routes/projects.$projectId'
 import { Route as ProjectsProjectIdIndexImport } from './routes/projects.$projectId.index'
 import { Route as ProjectsProjectIdEditImport } from './routes/projects.$projectId.edit'
+import { Route as ProjectsProjectIdCallsImport } from './routes/projects.$projectId.calls'
 import { Route as ProjectsProjectIdNetworkGroupsNewImport } from './routes/projects.$projectId.network-groups.new'
 import { Route as ProjectsProjectIdExpertsNewImport } from './routes/projects.$projectId.experts.new'
 import { Route as ProjectsProjectIdExpertsExpertIdEditImport } from './routes/projects.$projectId.experts.$expertId.edit'
@@ -56,6 +57,12 @@ const ProjectsProjectIdIndexRoute = ProjectsProjectIdIndexImport.update({
 const ProjectsProjectIdEditRoute = ProjectsProjectIdEditImport.update({
   id: '/edit',
   path: '/edit',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+
+const ProjectsProjectIdCallsRoute = ProjectsProjectIdCallsImport.update({
+  id: '/calls',
+  path: '/calls',
   getParentRoute: () => ProjectsProjectIdRoute,
 } as any)
 
@@ -112,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof rootRoute
     }
+    '/projects/$projectId/calls': {
+      id: '/projects/$projectId/calls'
+      path: '/calls'
+      fullPath: '/projects/$projectId/calls'
+      preLoaderRoute: typeof ProjectsProjectIdCallsImport
+      parentRoute: typeof ProjectsProjectIdImport
+    }
     '/projects/$projectId/edit': {
       id: '/projects/$projectId/edit'
       path: '/edit'
@@ -153,6 +167,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface ProjectsProjectIdRouteChildren {
+  ProjectsProjectIdCallsRoute: typeof ProjectsProjectIdCallsRoute
   ProjectsProjectIdEditRoute: typeof ProjectsProjectIdEditRoute
   ProjectsProjectIdIndexRoute: typeof ProjectsProjectIdIndexRoute
   ProjectsProjectIdExpertsNewRoute: typeof ProjectsProjectIdExpertsNewRoute
@@ -161,6 +176,7 @@ interface ProjectsProjectIdRouteChildren {
 }
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
+  ProjectsProjectIdCallsRoute: ProjectsProjectIdCallsRoute,
   ProjectsProjectIdEditRoute: ProjectsProjectIdEditRoute,
   ProjectsProjectIdIndexRoute: ProjectsProjectIdIndexRoute,
   ProjectsProjectIdExpertsNewRoute: ProjectsProjectIdExpertsNewRoute,
@@ -178,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/calls': typeof ProjectsProjectIdCallsRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
   '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
@@ -189,6 +206,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/calls': typeof ProjectsProjectIdCallsRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
   '/projects/$projectId': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
@@ -202,6 +220,7 @@ export interface FileRoutesById {
   '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/projects/$projectId/calls': typeof ProjectsProjectIdCallsRoute
   '/projects/$projectId/edit': typeof ProjectsProjectIdEditRoute
   '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
@@ -216,6 +235,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/projects'
+    | '/projects/$projectId/calls'
     | '/projects/$projectId/edit'
     | '/projects/$projectId/'
     | '/projects/$projectId/experts/new'
@@ -226,6 +246,7 @@ export interface FileRouteTypes {
     | '/'
     | '/projects/new'
     | '/projects'
+    | '/projects/$projectId/calls'
     | '/projects/$projectId/edit'
     | '/projects/$projectId'
     | '/projects/$projectId/experts/new'
@@ -237,6 +258,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/projects/new'
     | '/projects/'
+    | '/projects/$projectId/calls'
     | '/projects/$projectId/edit'
     | '/projects/$projectId/'
     | '/projects/$projectId/experts/new'
@@ -281,6 +303,7 @@ export const routeTree = rootRoute
     "/projects/$projectId": {
       "filePath": "projects.$projectId.tsx",
       "children": [
+        "/projects/$projectId/calls",
         "/projects/$projectId/edit",
         "/projects/$projectId/",
         "/projects/$projectId/experts/new",
@@ -293,6 +316,10 @@ export const routeTree = rootRoute
     },
     "/projects/": {
       "filePath": "projects.index.tsx"
+    },
+    "/projects/$projectId/calls": {
+      "filePath": "projects.$projectId.calls.tsx",
+      "parent": "/projects/$projectId"
     },
     "/projects/$projectId/edit": {
       "filePath": "projects.$projectId.edit.tsx",

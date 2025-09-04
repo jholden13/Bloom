@@ -123,6 +123,12 @@ function ProjectDetailIndexPage() {
                 Edit Project
               </button>
             </Link>
+            <Link to={`/projects/${projectId}/calls`}>
+              <button className="btn btn-outline">
+                <Calendar className="w-4 h-4 mr-2" />
+                View Calls
+              </button>
+            </Link>
             <Link to={`/projects/${projectId}/network-groups/new`}>
               <button className="btn btn-outline">
                 <Network className="w-4 h-4 mr-2" />
