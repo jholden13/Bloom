@@ -73,7 +73,7 @@ function RootComponent() {
                         to="/"
                         className="btn btn-ghost normal-case text-xl"
                       >
-                        Trip Planner
+                        gchen.xyz
                       </Link>
                     </div>
                     <div className="navbar-center hidden lg:flex">
@@ -88,6 +88,16 @@ function RootComponent() {
                         >
                           Home
                         </Link>
+                        <Link
+                          to="/trips"
+                          className="btn btn-ghost"
+                          activeProps={{
+                            className: "btn btn-ghost btn-active",
+                          }}
+                          onClick={() => setIsSidebarOpen(false)}
+                        >
+                          Trip Planner
+                        </Link>
                       </nav>
                     </div>
                     <div className="navbar-end">
@@ -99,7 +109,7 @@ function RootComponent() {
                     <Outlet />
                   </main>
                   <footer className="footer footer-center p-4 text-base-content">
-                    <p>© {new Date().getFullYear()} Trip Planner</p>
+                    <p>© {new Date().getFullYear()} gchen.xyz</p>
                   </footer>
                 </div>
                 {/* Sidebar content for mobile */}
@@ -123,6 +133,18 @@ function RootComponent() {
                             className="flex items-center p-2"
                           >
                             Home
+                          </Link>
+                        </li>
+                        <li>
+                          <Link
+                            to="/trips"
+                            onClick={() => setIsSidebarOpen(false)}
+                            activeProps={{
+                              className: "active",
+                            }}
+                            className="flex items-center p-2"
+                          >
+                            Trip Planner
                           </Link>
                         </li>
                       </ul>

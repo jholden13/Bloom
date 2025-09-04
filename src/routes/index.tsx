@@ -1,98 +1,80 @@
-import { SignInButton } from "@clerk/clerk-react";
-import { convexQuery } from "@convex-dev/react-query";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Authenticated, Unauthenticated, useMutation } from "convex/react";
-import { Calendar, MapPin, Trash2 } from "lucide-react";
-import { api } from "../../convex/_generated/api";
-
-const tripsQueryOptions = convexQuery(api.trips.list, {});
+import { Calendar, Code, Globe, Palette } from "lucide-react";
 
 export const Route = createFileRoute("/")({
-  loader: async ({ context: { queryClient } }) =>
-    await queryClient.ensureQueryData(tripsQueryOptions),
   component: HomePage,
 });
 
 function HomePage() {
+  const apps = [
+    {
+      name: "Trip Planner",
+      description: "Plan your trips with detailed travel legs, accommodations, and outreach management",
+      icon: Calendar,
+      url: "/trips",
+      color: "text-blue-500",
+      bgColor: "bg-blue-50",
+    },
+    // Add more apps here as you build them
+    // {
+    //   name: "Portfolio",
+    //   description: "Personal portfolio and projects showcase",
+    //   icon: Globe,
+    //   url: "/portfolio", 
+    //   color: "text-green-500",
+    //   bgColor: "bg-green-50",
+    // },
+    // {
+    //   name: "Code Lab",
+    //   description: "Experimental projects and code snippets",
+    //   icon: Code,
+    //   url: "/lab",
+    //   color: "text-purple-500", 
+    //   bgColor: "bg-purple-50",
+    // },
+  ];
+
   return (
-    <div className="text-center">
-      <div className="not-prose flex justify-center mb-4">
-        <Calendar className="w-16 h-16 text-primary" />
-      </div>
-      <h1>Trip Planner</h1>
-      <p className="text-lg opacity-80 mb-6">Plan your trips with detailed travel legs and daily accommodations</p>
-
-      {/* Always show trips dashboard (no auth required for demo) */}
-      <TripsDashboard />
-    </div>
-  );
-}
-
-function TripsDashboard() {
-  const { data: trips } = useSuspenseQuery(tripsQueryOptions);
-  const deleteTrip = useMutation(api.trips.deleteTrip);
-
-  const handleDeleteTrip = async (tripId: string, tripName: string, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation to trip details
-    e.stopPropagation();
-    
-    if (confirm(`Are you sure you want to delete "${tripName}"? This will also delete all outreach and meetings for this trip.`)) {
-      await deleteTrip({ id: tripId as any });
-    }
-  };
-
-  return (
-    <>
-      <div className="not-prose mb-6">
-        <Link to="/trips/new">
-          <button className="btn btn-primary">Create New Trip</button>
-        </Link>
-      </div>
-
-      {trips.length === 0 ? (
-        <div className="not-prose">
-          <div className="p-8 bg-base-200 rounded-lg">
-            <p className="opacity-70">No trips yet. Create your first trip to get started!</p>
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-12">
+        <div className="not-prose flex justify-center mb-6">
+          <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
+            <span className="text-3xl font-bold text-primary-content">GC</span>
           </div>
         </div>
-      ) : (
-        <div className="not-prose grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {trips.map((trip) => (
-            <div key={trip._id} className="card bg-base-100 shadow hover:shadow-lg transition-shadow">
-              <div className="card-body">
-                <div className="flex justify-between items-start">
-                  <Link to="/trips/$tripId" params={{ tripId: trip._id }} className="flex-1">
-                    <h3 className="card-title text-lg hover:text-primary cursor-pointer">{trip.name}</h3>
-                    {trip.description && (
-                      <p className="text-sm opacity-70 mb-2">{trip.description}</p>
-                    )}
-                    <div className="flex items-center gap-2 text-xl text-red-500 font-bold">
-                      <Calendar className="w-5 h-5" />
-                      {trip.startDate || 'No dates set'}
+        <h1 className="text-4xl font-bold mb-4">gchen.xyz</h1>
+        <p className="text-xl opacity-80 mb-8">Welcome to my collection of applications and projects</p>
+      </div>
+
+      <div className="not-prose grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {apps.map((app) => {
+          const IconComponent = app.icon;
+          return (
+            <Link key={app.name} to={app.url} className="block">
+              <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                <div className="card-body">
+                  <div className={`w-16 h-16 ${app.bgColor} rounded-lg flex items-center justify-center mb-4 mx-auto`}>
+                    <IconComponent className={`w-8 h-8 ${app.color}`} />
+                  </div>
+                  <h2 className="card-title text-xl justify-center mb-2">{app.name}</h2>
+                  <p className="text-center opacity-70 mb-4">{app.description}</p>
+                  <div className="card-actions justify-center">
+                    <div className="badge badge-primary cursor-pointer px-4 py-3">
+                      Open App
                     </div>
-                  </Link>
-                  <button
-                    onClick={(e) => handleDeleteTrip(trip._id, trip.name, e)}
-                    className="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content"
-                    title="Delete trip"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="card-actions justify-end mt-2">
-                  <Link to="/trips/$tripId" params={{ tripId: trip._id }}>
-                    <div className="badge badge-primary cursor-pointer">
-                      <MapPin className="w-3 h-3 mr-1" />
-                      View Details
-                    </div>
-                  </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            </Link>
+          );
+        })}
+      </div>
+
+      {apps.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-lg opacity-70">More apps coming soon...</p>
         </div>
       )}
-    </>
+    </div>
   );
 }

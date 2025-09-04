@@ -16,6 +16,7 @@ import { Route as MeetingsImport } from './routes/meetings'
 import { Route as EditOutreachImport } from './routes/edit-outreach'
 import { Route as AddOutreachImport } from './routes/add-outreach'
 import { Route as IndexImport } from './routes/index'
+import { Route as TripsIndexImport } from './routes/trips.index'
 import { Route as TripsNewImport } from './routes/trips.new'
 import { Route as TripsTripIdImport } from './routes/trips.$tripId'
 
@@ -48,6 +49,12 @@ const AddOutreachRoute = AddOutreachImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const TripsIndexRoute = TripsIndexImport.update({
+  id: '/trips/',
+  path: '/trips/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -116,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsNewImport
       parentRoute: typeof rootRoute
     }
+    '/trips/': {
+      id: '/trips/'
+      path: '/trips'
+      fullPath: '/trips'
+      preLoaderRoute: typeof TripsIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -129,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/print-meetings': typeof PrintMeetingsRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/trips': typeof TripsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -139,6 +154,7 @@ export interface FileRoutesByTo {
   '/print-meetings': typeof PrintMeetingsRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/trips': typeof TripsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -150,6 +166,7 @@ export interface FileRoutesById {
   '/print-meetings': typeof PrintMeetingsRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/new': typeof TripsNewRoute
+  '/trips/': typeof TripsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -162,6 +179,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -171,6 +189,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips'
   id:
     | '__root__'
     | '/'
@@ -180,6 +199,7 @@ export interface FileRouteTypes {
     | '/print-meetings'
     | '/trips/$tripId'
     | '/trips/new'
+    | '/trips/'
   fileRoutesById: FileRoutesById
 }
 
@@ -191,6 +211,7 @@ export interface RootRouteChildren {
   PrintMeetingsRoute: typeof PrintMeetingsRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
   TripsNewRoute: typeof TripsNewRoute
+  TripsIndexRoute: typeof TripsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -201,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrintMeetingsRoute: PrintMeetingsRoute,
   TripsTripIdRoute: TripsTripIdRoute,
   TripsNewRoute: TripsNewRoute,
+  TripsIndexRoute: TripsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -219,7 +241,8 @@ export const routeTree = rootRoute
         "/meetings",
         "/print-meetings",
         "/trips/$tripId",
-        "/trips/new"
+        "/trips/new",
+        "/trips/"
       ]
     },
     "/": {
@@ -242,6 +265,9 @@ export const routeTree = rootRoute
     },
     "/trips/new": {
       "filePath": "trips.new.tsx"
+    },
+    "/trips/": {
+      "filePath": "trips.index.tsx"
     }
   }
 }
