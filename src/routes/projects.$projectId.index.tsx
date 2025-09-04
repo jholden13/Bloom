@@ -52,6 +52,10 @@ function ProjectDetailIndexPage() {
     }
   };
 
+  const formatCost = (cost: number) => {
+    return cost % 1 === 0 ? cost.toString() : cost.toFixed(1);
+  };
+
   const handleStatusChange = async (expertId: string, status: string) => {
     await updateExpert({
       id: expertId,
@@ -270,7 +274,7 @@ function ProjectDetailIndexPage() {
                                   {expert.cost && (
                                     <div className="flex items-center">
                                       <DollarSign className="w-4 h-4 mr-1" />
-                                      {expert.cost} credits
+                                      {formatCost(expert.cost)} credits
                                     </div>
                                   )}
 
@@ -416,7 +420,7 @@ function ProjectDetailIndexPage() {
                                 {expert.cost && (
                                   <div className="flex items-center">
                                     <DollarSign className="w-4 h-4 mr-1" />
-                                    {expert.cost} credits
+                                    {formatCost(expert.cost)} credits
                                   </div>
                                 )}
 

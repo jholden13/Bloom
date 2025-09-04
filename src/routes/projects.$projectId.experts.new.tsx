@@ -189,10 +189,10 @@ function NewExpertPage() {
               </label>
               <input
                 type="number"
-                step="1"
+                step="0.1"
                 min="0"
                 className="input input-bordered w-full"
-                placeholder="0"
+                placeholder="0.0"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
