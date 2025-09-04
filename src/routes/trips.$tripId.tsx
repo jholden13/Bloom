@@ -211,7 +211,7 @@ function TripItinerarySection({ tripId, legs, lodging, meetings, tripStartDate, 
   const [showAddLegForm, setShowAddLegForm] = useState(false);
   const [showAddLodgingForm, setShowAddLodgingForm] = useState(false);
 
-  // Helper function to generate Google Maps URL
+  // Helper function to generate Google Maps URL for addresses
   const generateGoogleMapsUrl = (address: string, city?: string) => {
     const fullAddress = [address, city].filter(Boolean).join(', ');
     return `https://www.google.com/maps/search/${encodeURIComponent(fullAddress)}`;
