@@ -528,12 +528,12 @@ function MeetingsSection({ tripId, meetings, outreach, contacts, organizations }
                             {item.organization && ` • ${item.organization.name}`}
                           </div>
                         )}
-                        {item.proposedAddress && (
+                        {(item.proposedAddress || item.proposedStreetAddress) && (
                           <div className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
                             <a 
                               href={generateGoogleMapsUrl(
-                                item.proposedAddress, 
+                                item.proposedStreetAddress || item.proposedAddress, 
                                 item.proposedCity, 
                                 item.proposedState, 
                                 item.proposedCountry
@@ -542,8 +542,10 @@ function MeetingsSection({ tripId, meetings, outreach, contacts, organizations }
                               rel="noopener noreferrer"
                               className="text-primary hover:underline"
                             >
-                              {item.proposedAddress}
+                              {item.proposedStreetAddress || item.proposedAddress}
                               {item.proposedCity && `, ${item.proposedCity}`}
+                              {item.proposedState && `, ${item.proposedState}`}
+                              {item.proposedZipCode && ` ${item.proposedZipCode}`}
                             </a>
                           </div>
                         )}
