@@ -11,40 +11,13 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as PrintMeetingsImport } from './routes/print-meetings'
-import { Route as MeetingsImport } from './routes/meetings'
-import { Route as EditOutreachImport } from './routes/edit-outreach'
-import { Route as AddOutreachImport } from './routes/add-outreach'
 import { Route as IndexImport } from './routes/index'
-import { Route as TripsIndexImport } from './routes/trips.index'
-import { Route as TripsNewImport } from './routes/trips.new'
-import { Route as TripsTripIdImport } from './routes/trips.$tripId'
+import { Route as ProjectsIndexImport } from './routes/projects.index'
+import { Route as ProjectsNewImport } from './routes/projects.new'
+import { Route as ProjectsProjectIdImport } from './routes/projects.$projectId'
+import { Route as ProjectsProjectIdExpertsNewImport } from './routes/projects.$projectId.experts.new'
 
 // Create/Update Routes
-
-const PrintMeetingsRoute = PrintMeetingsImport.update({
-  id: '/print-meetings',
-  path: '/print-meetings',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const MeetingsRoute = MeetingsImport.update({
-  id: '/meetings',
-  path: '/meetings',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const EditOutreachRoute = EditOutreachImport.update({
-  id: '/edit-outreach',
-  path: '/edit-outreach',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AddOutreachRoute = AddOutreachImport.update({
-  id: '/add-outreach',
-  path: '/add-outreach',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -52,23 +25,30 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const TripsIndexRoute = TripsIndexImport.update({
-  id: '/trips/',
-  path: '/trips/',
+const ProjectsIndexRoute = ProjectsIndexImport.update({
+  id: '/projects/',
+  path: '/projects/',
   getParentRoute: () => rootRoute,
 } as any)
 
-const TripsNewRoute = TripsNewImport.update({
-  id: '/trips/new',
-  path: '/trips/new',
+const ProjectsNewRoute = ProjectsNewImport.update({
+  id: '/projects/new',
+  path: '/projects/new',
   getParentRoute: () => rootRoute,
 } as any)
 
-const TripsTripIdRoute = TripsTripIdImport.update({
-  id: '/trips/$tripId',
-  path: '/trips/$tripId',
+const ProjectsProjectIdRoute = ProjectsProjectIdImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
   getParentRoute: () => rootRoute,
 } as any)
+
+const ProjectsProjectIdExpertsNewRoute =
+  ProjectsProjectIdExpertsNewImport.update({
+    id: '/experts/new',
+    path: '/experts/new',
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -81,148 +61,112 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/add-outreach': {
-      id: '/add-outreach'
-      path: '/add-outreach'
-      fullPath: '/add-outreach'
-      preLoaderRoute: typeof AddOutreachImport
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdImport
       parentRoute: typeof rootRoute
     }
-    '/edit-outreach': {
-      id: '/edit-outreach'
-      path: '/edit-outreach'
-      fullPath: '/edit-outreach'
-      preLoaderRoute: typeof EditOutreachImport
+    '/projects/new': {
+      id: '/projects/new'
+      path: '/projects/new'
+      fullPath: '/projects/new'
+      preLoaderRoute: typeof ProjectsNewImport
       parentRoute: typeof rootRoute
     }
-    '/meetings': {
-      id: '/meetings'
-      path: '/meetings'
-      fullPath: '/meetings'
-      preLoaderRoute: typeof MeetingsImport
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof rootRoute
     }
-    '/print-meetings': {
-      id: '/print-meetings'
-      path: '/print-meetings'
-      fullPath: '/print-meetings'
-      preLoaderRoute: typeof PrintMeetingsImport
-      parentRoute: typeof rootRoute
-    }
-    '/trips/$tripId': {
-      id: '/trips/$tripId'
-      path: '/trips/$tripId'
-      fullPath: '/trips/$tripId'
-      preLoaderRoute: typeof TripsTripIdImport
-      parentRoute: typeof rootRoute
-    }
-    '/trips/new': {
-      id: '/trips/new'
-      path: '/trips/new'
-      fullPath: '/trips/new'
-      preLoaderRoute: typeof TripsNewImport
-      parentRoute: typeof rootRoute
-    }
-    '/trips/': {
-      id: '/trips/'
-      path: '/trips'
-      fullPath: '/trips'
-      preLoaderRoute: typeof TripsIndexImport
-      parentRoute: typeof rootRoute
+    '/projects/$projectId/experts/new': {
+      id: '/projects/$projectId/experts/new'
+      path: '/experts/new'
+      fullPath: '/projects/$projectId/experts/new'
+      preLoaderRoute: typeof ProjectsProjectIdExpertsNewImport
+      parentRoute: typeof ProjectsProjectIdImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface ProjectsProjectIdRouteChildren {
+  ProjectsProjectIdExpertsNewRoute: typeof ProjectsProjectIdExpertsNewRoute
+}
+
+const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
+  ProjectsProjectIdExpertsNewRoute: ProjectsProjectIdExpertsNewRoute,
+}
+
+const ProjectsProjectIdRouteWithChildren =
+  ProjectsProjectIdRoute._addFileChildren(ProjectsProjectIdRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/add-outreach': typeof AddOutreachRoute
-  '/edit-outreach': typeof EditOutreachRoute
-  '/meetings': typeof MeetingsRoute
-  '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
-  '/trips/new': typeof TripsNewRoute
-  '/trips': typeof TripsIndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/add-outreach': typeof AddOutreachRoute
-  '/edit-outreach': typeof EditOutreachRoute
-  '/meetings': typeof MeetingsRoute
-  '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
-  '/trips/new': typeof TripsNewRoute
-  '/trips': typeof TripsIndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/add-outreach': typeof AddOutreachRoute
-  '/edit-outreach': typeof EditOutreachRoute
-  '/meetings': typeof MeetingsRoute
-  '/print-meetings': typeof PrintMeetingsRoute
-  '/trips/$tripId': typeof TripsTripIdRoute
-  '/trips/new': typeof TripsNewRoute
-  '/trips/': typeof TripsIndexRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
+  '/projects/new': typeof ProjectsNewRoute
+  '/projects/': typeof ProjectsIndexRoute
+  '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/add-outreach'
-    | '/edit-outreach'
-    | '/meetings'
-    | '/print-meetings'
-    | '/trips/$tripId'
-    | '/trips/new'
-    | '/trips'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects'
+    | '/projects/$projectId/experts/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/add-outreach'
-    | '/edit-outreach'
-    | '/meetings'
-    | '/print-meetings'
-    | '/trips/$tripId'
-    | '/trips/new'
-    | '/trips'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects'
+    | '/projects/$projectId/experts/new'
   id:
     | '__root__'
     | '/'
-    | '/add-outreach'
-    | '/edit-outreach'
-    | '/meetings'
-    | '/print-meetings'
-    | '/trips/$tripId'
-    | '/trips/new'
-    | '/trips/'
+    | '/projects/$projectId'
+    | '/projects/new'
+    | '/projects/'
+    | '/projects/$projectId/experts/new'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AddOutreachRoute: typeof AddOutreachRoute
-  EditOutreachRoute: typeof EditOutreachRoute
-  MeetingsRoute: typeof MeetingsRoute
-  PrintMeetingsRoute: typeof PrintMeetingsRoute
-  TripsTripIdRoute: typeof TripsTripIdRoute
-  TripsNewRoute: typeof TripsNewRoute
-  TripsIndexRoute: typeof TripsIndexRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
+  ProjectsNewRoute: typeof ProjectsNewRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AddOutreachRoute: AddOutreachRoute,
-  EditOutreachRoute: EditOutreachRoute,
-  MeetingsRoute: MeetingsRoute,
-  PrintMeetingsRoute: PrintMeetingsRoute,
-  TripsTripIdRoute: TripsTripIdRoute,
-  TripsNewRoute: TripsNewRoute,
-  TripsIndexRoute: TripsIndexRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
+  ProjectsNewRoute: ProjectsNewRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -236,38 +180,29 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/add-outreach",
-        "/edit-outreach",
-        "/meetings",
-        "/print-meetings",
-        "/trips/$tripId",
-        "/trips/new",
-        "/trips/"
+        "/projects/$projectId",
+        "/projects/new",
+        "/projects/"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
-    "/add-outreach": {
-      "filePath": "add-outreach.tsx"
+    "/projects/$projectId": {
+      "filePath": "projects.$projectId.tsx",
+      "children": [
+        "/projects/$projectId/experts/new"
+      ]
     },
-    "/edit-outreach": {
-      "filePath": "edit-outreach.tsx"
+    "/projects/new": {
+      "filePath": "projects.new.tsx"
     },
-    "/meetings": {
-      "filePath": "meetings.tsx"
+    "/projects/": {
+      "filePath": "projects.index.tsx"
     },
-    "/print-meetings": {
-      "filePath": "print-meetings.tsx"
-    },
-    "/trips/$tripId": {
-      "filePath": "trips.$tripId.tsx"
-    },
-    "/trips/new": {
-      "filePath": "trips.new.tsx"
-    },
-    "/trips/": {
-      "filePath": "trips.index.tsx"
+    "/projects/$projectId/experts/new": {
+      "filePath": "projects.$projectId.experts.new.tsx",
+      "parent": "/projects/$projectId"
     }
   }
 }

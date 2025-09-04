@@ -7,71 +7,40 @@ export default defineSchema({
     name: v.string(),
   }).index("by_clerkId", ["clerkId"]),
 
-  trips: defineTable({
+  projects: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
-    startDate: v.optional(v.string()),
-    endDate: v.optional(v.string()),
     createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
 
-  organizations: defineTable({
+  experts: defineTable({
+    projectId: v.id("projects"),
     name: v.string(),
-    website: v.optional(v.string()),
-    notes: v.optional(v.string()),
-  }),
-
-  contacts: defineTable({
-    organizationId: v.id("organizations"),
-    name: v.string(),
-    email: v.string(),
-    title: v.optional(v.string()),
-    phone: v.optional(v.string()),
-  }).index("by_organization", ["organizationId"]),
-
-  outreach: defineTable({
-    tripId: v.id("trips"),
-    contactId: v.id("contacts"),
-    organizationId: v.id("organizations"),
-    outreachDate: v.string(),
-    reachedOutBy: v.optional(v.id("users")), // Made optional for demo without auth
-    response: v.union(
-      v.literal("pending"),
-      v.literal("interested"),
-      v.literal("not_interested"),
-      v.literal("no_response"),
-      v.literal("meeting_scheduled")
+    biography: v.optional(v.string()),
+    network: v.string(),
+    cost: v.optional(v.number()),
+    costCurrency: v.optional(v.string()),
+    status: v.union(
+      v.literal("rejected"),
+      v.literal("pending review"),
+      v.literal("maybe"),
+      v.literal("schedule call")
     ),
-    responseDate: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
     notes: v.optional(v.string()),
-    proposedAddress: v.optional(v.string()),
-    proposedStreetAddress: v.optional(v.string()),
-    proposedCity: v.optional(v.string()),
-    proposedState: v.optional(v.string()),
-    proposedCountry: v.optional(v.string()),
-    proposedZipCode: v.optional(v.string()),
-    proposedMeetingTime: v.optional(v.string()),
   })
-    .index("by_trip", ["tripId"])
-    .index("by_contact", ["contactId"])
-    .index("by_organization", ["organizationId"])
-    .index("by_response", ["response"]),
+    .index("by_project", ["projectId"])
+    .index("by_status", ["status"])
+    .index("by_network", ["network"]),
 
-  meetings: defineTable({
-    tripId: v.id("trips"),
-    outreachId: v.id("outreach"),
-    contactId: v.id("contacts"),
-    organizationId: v.id("organizations"),
+  calls: defineTable({
+    projectId: v.id("projects"),
+    expertId: v.id("experts"),
     title: v.string(),
-    scheduledDate: v.string(),
-    scheduledTime: v.string(),
+    scheduledDate: v.optional(v.string()),
+    scheduledTime: v.optional(v.string()),
     duration: v.optional(v.number()), // minutes
-    address: v.string(),
-    streetAddress: v.optional(v.string()),
-    city: v.optional(v.string()),
-    state: v.optional(v.string()),
-    country: v.optional(v.string()),
-    zipCode: v.optional(v.string()),
     notes: v.optional(v.string()),
     status: v.union(
       v.literal("scheduled"),
@@ -80,53 +49,8 @@ export default defineSchema({
       v.literal("cancelled")
     ),
   })
-    .index("by_trip", ["tripId"])
+    .index("by_project", ["projectId"])
+    .index("by_expert", ["expertId"])
     .index("by_scheduled_date", ["scheduledDate"])
     .index("by_status", ["status"]),
-
-  tripLegs: defineTable({
-    tripId: v.id("trips"),
-    order: v.number(),
-    startCity: v.string(),
-    endCity: v.string(),
-    transportation: v.union(
-      v.literal("flight"),
-      v.literal("train"),
-      v.literal("car"),
-      v.literal("bus"),
-      v.literal("boat"),
-      v.literal("other")
-    ),
-    date: v.optional(v.string()),
-    time: v.optional(v.string()),
-    reservationNumber: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    status: v.optional(v.union(
-      v.literal("confirmed"),
-      v.literal("tentative")
-    )),
-  }).index("by_trip", ["tripId"]),
-
-  lodging: defineTable({
-    tripId: v.id("trips"),
-    // Legacy field for migration compatibility
-    date: v.optional(v.string()),
-    // New fields for date ranges
-    startDate: v.optional(v.string()),
-    endDate: v.optional(v.string()),
-    name: v.string(),
-    address: v.optional(v.string()),
-    city: v.optional(v.string()),
-    // Legacy time fields for migration compatibility
-    checkIn: v.optional(v.string()),
-    checkOut: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    status: v.optional(v.union(
-      v.literal("confirmed"),
-      v.literal("tentative")
-    )),
-  })
-    .index("by_trip", ["tripId"])
-    .index("by_start_date", ["startDate"])
-    .index("by_date", ["date"]),
 });

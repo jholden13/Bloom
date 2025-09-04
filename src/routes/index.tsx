@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Calendar, Code, Globe, Palette } from "lucide-react";
+import { Users, Calendar } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -8,30 +8,13 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const apps = [
     {
-      name: "Trip Planner",
-      description: "Plan your trips with detailed travel legs, accommodations, and outreach management",
-      icon: Calendar,
-      url: "/trips",
+      name: "Expert Scheduler",
+      description: "Manage expert calls by project with status tracking and scheduling",
+      icon: Users,
+      url: "/projects",
       color: "text-blue-500",
       bgColor: "bg-blue-50",
     },
-    // Add more apps here as you build them
-    // {
-    //   name: "Portfolio",
-    //   description: "Personal portfolio and projects showcase",
-    //   icon: Globe,
-    //   url: "/portfolio", 
-    //   color: "text-green-500",
-    //   bgColor: "bg-green-50",
-    // },
-    // {
-    //   name: "Code Lab",
-    //   description: "Experimental projects and code snippets",
-    //   icon: Code,
-    //   url: "/lab",
-    //   color: "text-purple-500", 
-    //   bgColor: "bg-purple-50",
-    // },
   ];
 
   return (
@@ -39,11 +22,11 @@ function HomePage() {
       <div className="text-center mb-12">
         <div className="not-prose flex justify-center mb-6">
           <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-3xl font-bold text-primary-content">GC</span>
+            <Users className="w-10 h-10 text-primary-content" />
           </div>
         </div>
-        <h1 className="text-4xl font-bold mb-4">gchen.xyz</h1>
-        <p className="text-xl opacity-80 mb-8">Welcome to my collection of applications and projects</p>
+        <h1 className="text-4xl font-bold mb-4">Expert Scheduler</h1>
+        <p className="text-xl opacity-80 mb-8">Manage expert calls organized by project with comprehensive status tracking</p>
       </div>
 
       <div className="not-prose grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -69,12 +52,6 @@ function HomePage() {
           );
         })}
       </div>
-
-      {apps.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-lg opacity-70">More apps coming soon...</p>
-        </div>
-      )}
     </div>
   );
 }

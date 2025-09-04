@@ -1,0 +1,126 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useForm } from "@tanstack/react-form";
+import { useMutation } from "convex/react";
+import { ArrowLeft } from "lucide-react";
+import { api } from "../../convex/_generated/api.js";
+import { z } from "zod";
+
+export const Route = createFileRoute("/projects/new")({
+  component: NewProjectPage,
+});
+
+const schema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  description: z.string().optional(),
+});
+
+function NewProjectPage() {
+  const navigate = useNavigate();
+  const createProject = useMutation(api.projects.create);
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+    validators: {
+      onChange: schema,
+    },
+    onSubmit: async ({ value }) => {
+      const projectId = await createProject({
+        name: value.name,
+        description: value.description || undefined,
+      });
+      navigate({ to: `/projects/${projectId}` });
+    },
+  });
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="mb-8">
+        <button
+          onClick={() => navigate({ to: "/projects" })}
+          className="btn btn-ghost mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Projects
+        </button>
+        <h1 className="text-3xl font-bold mb-2">Create New Project</h1>
+        <p className="opacity-80">Set up a new project to manage expert consultations</p>
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void form.handleSubmit();
+        }}
+        className="space-y-6"
+      >
+        <form.Field
+          name="name"
+          children={(field) => (
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">Project Name</span>
+              </label>
+              <input
+                type="text"
+                className={`input input-bordered w-full ${
+                  !field.state.meta.isValid ? "input-error" : ""
+                }`}
+                placeholder="Enter project name"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+              {!field.state.meta.isValid && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+        />
+
+        <form.Field
+          name="description"
+          children={(field) => (
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">Description</span>
+                <span className="label-text-alt opacity-70">(optional)</span>
+              </label>
+              <textarea
+                className="textarea textarea-bordered w-full h-24"
+                placeholder="Describe the project"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
+            </div>
+          )}
+        />
+
+        <div className="flex justify-end space-x-4">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/projects" })}
+            className="btn btn-ghost"
+            disabled={form.state.isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!form.state.canSubmit || form.state.isSubmitting}
+          >
+            {form.state.isSubmitting ? "Creating..." : "Create Project"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
