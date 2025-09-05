@@ -4,12 +4,8 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/ENsearch/(.*)",
-      "destination": "/ENsearch/index.html"
-    },
-    {
-      "source": "/ENsearch",
-      "destination": "/ENsearch/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
