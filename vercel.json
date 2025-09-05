@@ -4,8 +4,20 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/ensearch/(.*)",
+      "destination": "/ensearch/index.html"
+    },
+    {
+      "source": "/ensearch",
+      "destination": "/ensearch/index.html"
+    },
+    {
+      "source": "/trips/(.*)",
+      "destination": "/trips/index.html"
+    },
+    {
+      "source": "/trips",
+      "destination": "/trips/index.html"
     }
   ]
 }
