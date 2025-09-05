@@ -13,7 +13,9 @@ const schema = z.object({
   name: z.string().min(1, "Project name is required"),
   description: z.string().optional(),
   analyst: z.string().optional(),
+  analystEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
   researchAssociate: z.string().optional(),
+  researchAssociateEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
   startDate: z.string().optional(),
 });
 
@@ -52,7 +54,7 @@ function NewProjectPage() {
       startDate: "",
     },
     validators: {
-      onChange: schema,
+      onChange: schema as any,
     },
     onSubmit: async ({ value }) => {
       const projectId = await createProject({
@@ -107,7 +109,7 @@ function NewProjectPage() {
               {!field.state.meta.isValid && (
                 <label className="label">
                   <span className="label-text-alt text-error">
-                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                    {field.state.meta.errors.map((e: any) => e.message).join(", ")}
                   </span>
                 </label>
               )}

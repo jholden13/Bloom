@@ -88,7 +88,7 @@ function RootComponent() {
                         >
                           Home
                         </Link>
-                        <Link
+                        {/* <Link
                           to="/trips"
                           className="btn btn-ghost"
                           activeProps={{
@@ -97,7 +97,7 @@ function RootComponent() {
                           onClick={() => setIsSidebarOpen(false)}
                         >
                           Trip Planner
-                        </Link>
+                        </Link> */}
                       </nav>
                     </div>
                     <div className="navbar-end">
@@ -135,7 +135,7 @@ function RootComponent() {
                             Home
                           </Link>
                         </li>
-                        <li>
+                        {/* <li>
                           <Link
                             to="/trips"
                             onClick={() => setIsSidebarOpen(false)}
@@ -146,7 +146,7 @@ function RootComponent() {
                           >
                             Trip Planner
                           </Link>
-                        </li>
+                        </li> */}
                       </ul>
                     </div>
                   </div>

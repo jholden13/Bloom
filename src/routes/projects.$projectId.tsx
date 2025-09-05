@@ -8,8 +8,8 @@ import { api } from "../../convex/_generated/api.js";
 export const Route = createFileRoute("/projects/$projectId")({
   component: ProjectDetailPage,
   loader: async ({ context: { queryClient }, params }) => {
-    const projectQuery = convexQuery(api.projects.get, { id: params.projectId });
-    const expertsQuery = convexQuery(api.experts.listByProject, { projectId: params.projectId });
+    const projectQuery = convexQuery(api.projects.get, { id: params.projectId as any });
+    const expertsQuery = convexQuery(api.experts.listByProject, { projectId: params.projectId as any });
     await Promise.all([
       queryClient.ensureQueryData(projectQuery),
       queryClient.ensureQueryData(expertsQuery),
@@ -23,8 +23,8 @@ function ProjectDetailPage() {
   const updateExpert = useMutation(api.experts.update);
   const deleteExpert = useMutation(api.experts.remove);
 
-  const projectQuery = convexQuery(api.projects.get, { id: projectId });
-  const expertsQuery = convexQuery(api.experts.listByProject, { projectId });
+  const projectQuery = convexQuery(api.projects.get, { id: projectId as any });
+  const expertsQuery = convexQuery(api.experts.listByProject, { projectId: projectId as any });
 
   const { data: project } = useSuspenseQuery(projectQuery);
   const { data: experts } = useSuspenseQuery(expertsQuery);
@@ -50,14 +50,14 @@ function ProjectDetailPage() {
 
   const handleStatusChange = async (expertId: string, status: string) => {
     await updateExpert({
-      id: expertId,
+      id: expertId as any,
       status: status as any,
     });
   };
 
   const handleDeleteExpert = async (expertId: string) => {
     if (confirm("Are you sure you want to delete this expert?")) {
-      await deleteExpert({ id: expertId });
+      await deleteExpert({ id: expertId as any });
     }
   };
 

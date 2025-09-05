@@ -10,7 +10,7 @@ import { z } from "zod";
 export const Route = createFileRoute("/projects/$projectId/experts/new")({
   component: NewExpertPage,
   loader: async ({ context: { queryClient }, params }) => {
-    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId });
+    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId as any });
     await queryClient.ensureQueryData(networkGroupsQuery);
   },
   validateSearch: (search) => ({
@@ -21,10 +21,10 @@ export const Route = createFileRoute("/projects/$projectId/experts/new")({
 const schema = z.object({
   name: z.string().min(1, "Expert name is required"),
   biography: z.string().optional(),
-  networkGroupId: z.string().optional(),
-  cost: z.string().optional(),
+  networkGroupId: z.string().min(1, "Network group is required"),
+  cost: z.string().min(1, "Cost is required").refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Cost must be a valid number"),
   status: z.enum(["rejected", "pending review", "maybe", "schedule call"]),
-  notes: z.string().optional(),
+  screeningQuestions: z.string().optional(),
 });
 
 function NewExpertPage() {
@@ -33,7 +33,7 @@ function NewExpertPage() {
   const navigate = useNavigate();
   const createExpert = useMutation(api.experts.create);
 
-  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId });
+  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: projectId as any });
   const { data: networkGroups } = useSuspenseQuery(networkGroupsQuery);
 
   const form = useForm({
@@ -43,28 +43,22 @@ function NewExpertPage() {
       networkGroupId: networkGroupId || "",
       cost: "",
       status: "pending review" as const,
-      notes: "",
+      screeningQuestions: "",
     },
     validators: {
-      onChange: schema.transform((data) => ({
-        ...data,
-        cost: data.cost ? Number(data.cost) : undefined,
-        biography: data.biography || undefined,
-        notes: data.notes || undefined,
-        networkGroupId: data.networkGroupId || undefined,
-      })),
+      onChange: schema as any,
     },
     onSubmit: async ({ value }) => {
       try {
         console.log('Form submission started with value:', value);
         await createExpert({
-          projectId,
-          networkGroupId: value.networkGroupId || undefined,
+          projectId: projectId as any,
+          networkGroupId: value.networkGroupId as any,
           name: value.name,
           biography: value.biography || undefined,
-          cost: typeof value.cost === "string" && value.cost ? Number(value.cost) : undefined,
+          cost: Number(value.cost),
           status: value.status,
-          notes: value.notes || undefined,
+          screeningQuestions: value.screeningQuestions || undefined,
         });
         console.log('Expert created successfully, navigating...');
         navigate({ to: `/projects/${projectId}` });
@@ -136,21 +130,29 @@ function NewExpertPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Network Group</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <select
-                className="select select-bordered w-full"
+                className={`select select-bordered w-full ${
+                  !field.state.meta.isValid ? "select-error" : ""
+                }`}
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               >
-                <option value="">No network group</option>
+                <option value="">Select a network group</option>
                 {networkGroups.map((group) => (
                   <option key={group._id} value={group._id}>
                     {group.name}
                   </option>
                 ))}
               </select>
+              {!field.state.meta.isValid && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                  </span>
+                </label>
+              )}
               <label className="label">
                 <span className="label-text-alt opacity-70">
                   Choose a network group to organize this expert
@@ -169,11 +171,12 @@ function NewExpertPage() {
                 <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <textarea
-                className="textarea textarea-bordered w-full h-24"
-                placeholder="Describe the expert's background and expertise"
+                className="textarea textarea-bordered w-full h-32 text-black bg-white"
+                placeholder="Describe the expert's background and expertise..."
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                style={{ color: '#000000', backgroundColor: '#ffffff' }}
               />
             </div>
           )}
@@ -185,18 +188,26 @@ function NewExpertPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Cost (credits)</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <input
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered w-full"
+                className={`input input-bordered w-full ${
+                  !field.state.meta.isValid ? "input-error" : ""
+                }`}
                 placeholder="0.0"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
+              {!field.state.meta.isValid && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                  </span>
+                </label>
+              )}
             </div>
           )}
         />
@@ -226,20 +237,26 @@ function NewExpertPage() {
 
 
         <form.Field
-          name="notes"
+          name="screeningQuestions"
           children={(field) => (
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-semibold">Notes</span>
+                <span className="label-text font-semibold">Screening Questions</span>
                 <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <textarea
-                className="textarea textarea-bordered w-full h-20"
-                placeholder="Additional notes about this expert"
+                className="textarea textarea-bordered w-full h-48 text-black bg-white"
+                placeholder="Questions to ask during screening or initial contact..."
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                style={{ color: '#000000', backgroundColor: '#ffffff' }}
               />
+              <label className="label">
+                <span className="label-text-alt opacity-70">
+                  Questions to evaluate this expert's fit for the project
+                </span>
+              </label>
             </div>
           )}
         />

@@ -10,8 +10,8 @@ import { z } from "zod";
 export const Route = createFileRoute("/projects/$projectId/experts/$expertId/edit")({
   component: EditExpertPage,
   loader: async ({ context: { queryClient }, params }) => {
-    const expertQuery = convexQuery(api.experts.get, { id: params.expertId });
-    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId });
+    const expertQuery = convexQuery(api.experts.get, { id: params.expertId as any });
+    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId as any });
     await Promise.all([
       queryClient.ensureQueryData(expertQuery),
       queryClient.ensureQueryData(networkGroupsQuery),
@@ -23,9 +23,9 @@ const schema = z.object({
   name: z.string().min(1, "Expert name is required"),
   biography: z.string().optional(),
   networkGroupId: z.string().optional(),
-  cost: z.string().optional(),
+  cost: z.string().min(1, "Cost is required").refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Cost must be a valid number"),
   status: z.enum(["rejected", "pending review", "maybe", "schedule call"]),
-  notes: z.string().optional(),
+  screeningQuestions: z.string().optional(),
 });
 
 function EditExpertPage() {
@@ -33,8 +33,8 @@ function EditExpertPage() {
   const navigate = useNavigate();
   const updateExpert = useMutation(api.experts.update);
 
-  const expertQuery = convexQuery(api.experts.get, { id: expertId });
-  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId });
+  const expertQuery = convexQuery(api.experts.get, { id: expertId as any });
+  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: projectId as any });
   const { data: expert } = useSuspenseQuery(expertQuery);
   const { data: networkGroups } = useSuspenseQuery(networkGroupsQuery);
 
@@ -49,28 +49,22 @@ function EditExpertPage() {
       networkGroupId: expert.networkGroupId || "",
       cost: expert.cost ? expert.cost.toString() : "",
       status: expert.status,
-      notes: expert.notes || "",
+      screeningQuestions: expert.screeningQuestions || "",
     },
     validators: {
-      onChange: schema.transform((data) => ({
-        ...data,
-        cost: data.cost ? Number(data.cost) : undefined,
-        biography: data.biography || undefined,
-        notes: data.notes || undefined,
-        networkGroupId: data.networkGroupId || undefined,
-      })),
+      onChange: schema as any,
     },
     onSubmit: async ({ value }) => {
       try {
         console.log('Updating expert with value:', value);
         await updateExpert({
-          id: expertId,
-          networkGroupId: value.networkGroupId || undefined,
+          id: expertId as any,
+          networkGroupId: value.networkGroupId || undefined as any,
           name: value.name,
           biography: value.biography || undefined,
-          cost: typeof value.cost === "string" && value.cost ? Number(value.cost) : undefined,
+          cost: Number(value.cost),
           status: value.status,
-          notes: value.notes || undefined,
+          screeningQuestions: value.screeningQuestions || undefined,
         });
         console.log('Expert updated successfully, navigating...');
         navigate({ to: `/projects/${projectId}` });
@@ -175,11 +169,12 @@ function EditExpertPage() {
                 <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <textarea
-                className="textarea textarea-bordered w-full h-24"
-                placeholder="Describe the expert's background and expertise"
+                className="textarea textarea-bordered w-full h-32 text-black bg-white"
+                placeholder="Describe the expert's background and expertise..."
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                style={{ color: '#000000', backgroundColor: '#ffffff' }}
               />
             </div>
           )}
@@ -191,18 +186,26 @@ function EditExpertPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Cost (credits)</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <input
                 type="number"
                 step="0.1"
                 min="0"
-                className="input input-bordered w-full"
+                className={`input input-bordered w-full ${
+                  !field.state.meta.isValid ? "input-error" : ""
+                }`}
                 placeholder="0.0"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
+              {!field.state.meta.isValid && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {field.state.meta.errors.map((e) => e.message).join(", ")}
+                  </span>
+                </label>
+              )}
             </div>
           )}
         />
@@ -231,20 +234,26 @@ function EditExpertPage() {
         />
 
         <form.Field
-          name="notes"
+          name="screeningQuestions"
           children={(field) => (
             <div className="form-control">
               <label className="label">
-                <span className="label-text font-semibold">Notes</span>
+                <span className="label-text font-semibold">Screening Questions</span>
                 <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <textarea
-                className="textarea textarea-bordered w-full h-20"
-                placeholder="Additional notes about this expert"
+                className="textarea textarea-bordered w-full h-48 text-black bg-white"
+                placeholder="Questions to ask during screening or initial contact..."
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
+                style={{ color: '#000000', backgroundColor: '#ffffff' }}
               />
+              <label className="label">
+                <span className="label-text-alt opacity-70">
+                  Questions to evaluate this expert's fit for the project
+                </span>
+              </label>
             </div>
           )}
         />

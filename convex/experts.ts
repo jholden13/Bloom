@@ -64,6 +64,7 @@ export const create = mutation({
       v.literal("schedule call")
     ),
     notes: v.optional(v.string()),
+    screeningQuestions: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("experts", args);
@@ -84,6 +85,7 @@ export const update = mutation({
       v.literal("schedule call")
     )),
     notes: v.optional(v.string()),
+    screeningQuestions: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
     const filteredUpdates: any = {};

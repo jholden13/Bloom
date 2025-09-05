@@ -2,15 +2,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMutation } from "convex/react";
-import { ArrowLeft, Plus, User, Trash2, Edit3, Calendar, DollarSign, Edit, Network, Users, Settings } from "lucide-react";
+import { ArrowLeft, Plus, User, Trash2, Edit3, Calendar, DollarSign, Edit, Network, Users, Settings, Pencil, Search, X } from "lucide-react";
 import { api } from "@/../convex/_generated/api.js";
 
 export const Route = createFileRoute("/projects/$projectId/")({
   component: ProjectDetailIndexPage,
   loader: async ({ context: { queryClient }, params }) => {
-    const projectQuery = convexQuery(api.projects.get, { id: params.projectId });
-    const expertsQuery = convexQuery(api.experts.listByProject, { projectId: params.projectId });
-    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId });
+    const projectQuery = convexQuery(api.projects.get, { id: params.projectId as any });
+    const expertsQuery = convexQuery(api.experts.listByProject, { projectId: params.projectId as any });
+    const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: params.projectId as any });
     await Promise.all([
       queryClient.ensureQueryData(projectQuery),
       queryClient.ensureQueryData(expertsQuery),
@@ -25,9 +25,9 @@ function ProjectDetailIndexPage() {
   const updateExpert = useMutation(api.experts.update);
   const deleteExpert = useMutation(api.experts.remove);
 
-  const projectQuery = convexQuery(api.projects.get, { id: projectId });
-  const expertsQuery = convexQuery(api.experts.listByProject, { projectId });
-  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId });
+  const projectQuery = convexQuery(api.projects.get, { id: projectId as any });
+  const expertsQuery = convexQuery(api.experts.listByProject, { projectId: projectId as any });
+  const networkGroupsQuery = convexQuery(api.expertNetworkGroups.listByProject, { projectId: projectId as any });
 
   const { data: project } = useSuspenseQuery(projectQuery);
   const { data: experts } = useSuspenseQuery(expertsQuery);
@@ -56,17 +56,101 @@ function ProjectDetailIndexPage() {
     return cost % 1 === 0 ? cost.toString() : cost.toFixed(1);
   };
 
+  const calculateDaysInProgress = (startDate: string | undefined) => {
+    if (!startDate) return null;
+    const start = new Date(startDate);
+    const today = new Date();
+    const diffTime = today.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays); // Ensure non-negative result
+  };
+
+  const handleScheduleCall = (expert: any) => {
+    const networkGroup = expert.networkGroupId 
+      ? networkGroups.find(g => g._id === expert.networkGroupId)
+      : null;
+
+    if (!networkGroup?.email) {
+      alert("No contact email found for this expert's network group. Please add an email to the network group.");
+      return;
+    }
+
+    const subject = `Schedule call - ${expert.name}`;
+    const body = `Dear ${networkGroup.name},
+
+I would like to schedule a call with ${expert.name} for our project "${project.name}".
+
+Expert Details:
+- Name: ${expert.name}
+${expert.biography ? `- Biography: ${expert.biography}` : ''}
+${expert.cost ? `- Cost: ${formatCost(expert.cost)} credits` : ''}
+
+Please let me know your availability for scheduling this call.
+
+Best regards`;
+
+    const mailtoUrl = `mailto:${encodeURIComponent(networkGroup.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoUrl;
+  };
+
   const handleStatusChange = async (expertId: string, status: string) => {
     await updateExpert({
-      id: expertId,
+      id: expertId as any,
       status: status as any,
     });
   };
 
   const handleDeleteExpert = async (expertId: string) => {
     if (confirm("Are you sure you want to delete this expert?")) {
-      await deleteExpert({ id: expertId });
+      await deleteExpert({ id: expertId as any });
     }
+  };
+
+  const handleStartSearch = () => {
+    if (!project.analystEmail) {
+      alert("No analyst email found. Please edit the project and add an analyst email address.");
+      return;
+    }
+
+    const subject = project.name;
+    const body = project.description || "Project search initiated.";
+    const analystEmail = project.analystEmail;
+    const bccEmail = "fakeallEN@aol.com";
+    
+    const mailtoUrl = `mailto:${encodeURIComponent(analystEmail)}?bcc=${encodeURIComponent(bccEmail)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoUrl;
+  };
+
+  const handleRejectCall = (expert: any) => {
+    const networkGroup = expert.networkGroupId 
+      ? networkGroups.find(g => g._id === expert.networkGroupId)
+      : null;
+
+    if (!networkGroup?.email) {
+      alert("No contact email found for this expert's network group. Please add an email to the network group.");
+      return;
+    }
+
+    const subject = `Rejection - ${expert.name}`;
+    const body = `Dear ${networkGroup.name},
+
+Thank you for presenting ${expert.name} for our project "${project.name}".
+
+After careful consideration, we have decided not to move forward with this expert at this time.
+
+Expert Details:
+- Name: ${expert.name}
+${expert.biography ? `- Biography: ${expert.biography}` : ''}
+
+We appreciate your time and effort in sourcing this candidate.
+
+Best regards`;
+
+    const mailtoUrl = `mailto:${encodeURIComponent(networkGroup.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    window.location.href = mailtoUrl;
   };
 
   const statusOptions = ["rejected", "pending review", "maybe", "schedule call"];
@@ -88,54 +172,61 @@ function ProjectDetailIndexPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Projects
         </button>
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
-            {project.description && (
-              <p className="opacity-80 mb-3">{project.description}</p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
+          {project.description && (
+            <p className="text-xs opacity-60 mb-3">{project.description}</p>
+          )}
+          <div className="flex flex-wrap gap-2 text-sm mb-6">
+            {project.analyst && (
+              <div className="badge badge-outline">
+                <span className="font-semibold mr-1">Analyst:</span>
+                {project.analyst}
+              </div>
             )}
-            <div className="flex flex-wrap gap-2 text-sm">
-              {project.analyst && (
-                <div className="badge badge-outline">
-                  <span className="font-semibold mr-1">Analyst:</span>
-                  {project.analyst}
-                </div>
-              )}
-              {project.researchAssociate && (
-                <div className="badge badge-outline">
-                  <span className="font-semibold mr-1">Research Associate:</span>
-                  {project.researchAssociate}
-                </div>
-              )}
-              {project.startDate && (
-                <div className="badge badge-outline">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  <span className="font-semibold mr-1">Start:</span>
-                  {new Date(project.startDate).toLocaleDateString()}
-                </div>
-              )}
-            </div>
+            {project.researchAssociate && (
+              <div className="badge badge-outline">
+                <span className="font-semibold mr-1">Research Associate:</span>
+                {project.researchAssociate}
+              </div>
+            )}
+            {project.startDate && (
+              <div className="badge badge-outline">
+                <Calendar className="w-3 h-3 mr-1" />
+                <span className="font-semibold mr-1">Start:</span>
+                {new Date(project.startDate).toLocaleDateString()}
+              </div>
+            )}
+            {project.startDate && (
+              <div className="badge badge-outline">
+                <span className="font-semibold mr-1">Progress:</span>
+                {calculateDaysInProgress(project.startDate)} days
+              </div>
+            )}
           </div>
-          <div className="flex gap-2">
-            <Link to={`/projects/${projectId}/edit`}>
+
+          {/* Action buttons in 1 row */}
+          <div className="flex gap-2 flex-wrap">
+            <button 
+              onClick={handleStartSearch}
+              className="btn btn-success"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Start Search
+            </button>
+            <Link to={`/projects/${projectId}/edit` as any}>
               <button className="btn btn-outline">
-                <Edit className="w-4 h-4 mr-2" />
+                <Pencil className="w-4 h-4 mr-2" />
                 Edit Project
               </button>
             </Link>
-            <Link to={`/projects/${projectId}/calls`}>
+            <Link to={`/projects/${projectId}/calls` as any}>
               <button className="btn btn-outline">
                 <Calendar className="w-4 h-4 mr-2" />
                 View Calls
               </button>
             </Link>
-            <Link to={`/projects/${projectId}/network-groups/new`}>
-              <button className="btn btn-outline">
-                <Network className="w-4 h-4 mr-2" />
-                Add Network Group
-              </button>
-            </Link>
-            <Link to={`/projects/${projectId}/experts/new`}>
+            <Link to={`/projects/${projectId}/experts/new` as any}>
               <button className="btn btn-primary">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Expert
@@ -150,7 +241,7 @@ function ProjectDetailIndexPage() {
           <Network className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <h3 className="text-xl font-semibold mb-2">No network groups yet</h3>
           <p className="opacity-70 mb-6">Create your first network group to organize experts</p>
-          <Link to={`/projects/${projectId}/network-groups/new`}>
+          <Link to={`/projects/${projectId}/network-groups/new` as any}>
             <button className="btn btn-primary">
               <Network className="w-4 h-4 mr-2" />
               Add Network Group
@@ -166,16 +257,28 @@ function ProjectDetailIndexPage() {
                 <h2 className="text-xl font-semibold flex items-center">
                   <Network className="w-5 h-5 mr-2" />
                   {group.name}
+                  {!group.email && (
+                    <span className="badge badge-warning ml-3 text-xs">
+                      No email
+                    </span>
+                  )}
                   <span className="badge badge-outline ml-3">
                     {groupExperts.length} expert{groupExperts.length !== 1 ? 's' : ''}
                   </span>
                 </h2>
-                <Link to={`/projects/${projectId}/experts/new?networkGroupId=${group._id}`}>
-                  <button className="btn btn-sm btn-outline">
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Expert
-                  </button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link to={`/projects/${projectId}/network-groups/${group._id}/edit` as any}>
+                    <button className="btn btn-sm btn-ghost">
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <Link to={`/projects/${projectId}/experts/new?networkGroupId=${group._id}` as any}>
+                    <button className="btn btn-sm btn-outline">
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Expert
+                    </button>
+                  </Link>
+                </div>
               </div>
               
               {group.description && (
@@ -208,7 +311,7 @@ function ProjectDetailIndexPage() {
                                 <div className="flex justify-between items-start mb-3">
                                   <h4 className="card-title text-base">{expert.name}</h4>
                                   <div className="flex gap-2">
-                                    <Link to={`/projects/${projectId}/experts/${expert._id}/edit`}>
+                                    <Link to={`/projects/${projectId}/experts/${expert._id}/edit` as any}>
                                       <button className="btn btn-ghost btn-sm" title="Edit Expert">
                                         <Edit className="w-4 h-4" />
                                       </button>
@@ -302,13 +405,40 @@ function ProjectDetailIndexPage() {
                                       <span className="opacity-80">{expert.notes}</span>
                                     </div>
                                   )}
+
+                                  {expert.screeningQuestions && (
+                                    <div>
+                                      <strong>Screening Questions:</strong>{" "}
+                                      <span className="opacity-80">
+                                        {expert.screeningQuestions.length > 100 
+                                          ? `${expert.screeningQuestions.substring(0, 100)}...`
+                                          : expert.screeningQuestions
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {expert.status === "schedule call" && (
                                   <div className="card-actions justify-end mt-3">
-                                    <button className="btn btn-sm btn-primary">
+                                    <button 
+                                      className="btn btn-sm btn-primary"
+                                      onClick={() => handleScheduleCall(expert)}
+                                    >
                                       <Calendar className="w-4 h-4 mr-1" />
                                       Schedule Call
+                                    </button>
+                                  </div>
+                                )}
+
+                                {expert.status === "rejected" && (
+                                  <div className="card-actions justify-end mt-3">
+                                    <button 
+                                      className="btn btn-sm btn-error"
+                                      onClick={() => handleRejectCall(expert)}
+                                    >
+                                      <X className="w-4 h-4 mr-1" />
+                                      Reject Call
                                     </button>
                                   </div>
                                 )}
@@ -354,7 +484,7 @@ function ProjectDetailIndexPage() {
                               <div className="flex justify-between items-start mb-3">
                                 <h4 className="card-title text-base">{expert.name}</h4>
                                 <div className="flex gap-2">
-                                  <Link to={`/projects/${projectId}/experts/${expert._id}/edit`}>
+                                  <Link to={`/projects/${projectId}/experts/${expert._id}/edit` as any}>
                                     <button className="btn btn-ghost btn-sm" title="Edit Expert">
                                       <Edit className="w-4 h-4" />
                                     </button>
@@ -442,17 +572,6 @@ function ProjectDetailIndexPage() {
                                   </div>
                                 )}
 
-                                {expert.email && (
-                                  <div>
-                                    <strong>Email:</strong> {expert.email}
-                                  </div>
-                                )}
-
-                                {expert.phone && (
-                                  <div>
-                                    <strong>Phone:</strong> {expert.phone}
-                                  </div>
-                                )}
 
                                 {expert.notes && (
                                   <div>
@@ -460,13 +579,40 @@ function ProjectDetailIndexPage() {
                                     <span className="opacity-80">{expert.notes}</span>
                                   </div>
                                 )}
+
+                                {expert.screeningQuestions && (
+                                  <div>
+                                    <strong>Screening Questions:</strong>{" "}
+                                    <span className="opacity-80">
+                                      {expert.screeningQuestions.length > 100 
+                                        ? `${expert.screeningQuestions.substring(0, 100)}...`
+                                        : expert.screeningQuestions
+                                      }
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
                               {expert.status === "schedule call" && (
                                 <div className="card-actions justify-end mt-3">
-                                  <button className="btn btn-sm btn-primary">
+                                  <button 
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => handleScheduleCall(expert)}
+                                  >
                                     <Calendar className="w-4 h-4 mr-1" />
                                     Schedule Call
+                                  </button>
+                                </div>
+                              )}
+
+                              {expert.status === "rejected" && (
+                                <div className="card-actions justify-end mt-3">
+                                  <button 
+                                    className="btn btn-sm btn-error"
+                                    onClick={() => handleRejectCall(expert)}
+                                  >
+                                    <X className="w-4 h-4 mr-1" />
+                                    Reject Call
                                   </button>
                                 </div>
                               )}

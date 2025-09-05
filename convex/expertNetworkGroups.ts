@@ -6,12 +6,14 @@ export const create = mutation({
     projectId: v.id("projects"),
     name: v.string(),
     description: v.optional(v.string()),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("expertNetworkGroups", {
       projectId: args.projectId,
       name: args.name,
       description: args.description,
+      email: args.email,
     });
   },
 });
@@ -38,6 +40,7 @@ export const update = mutation({
     id: v.id("expertNetworkGroups"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

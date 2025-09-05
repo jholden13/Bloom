@@ -16,6 +16,15 @@ function ProjectsPage() {
   const projectsQuery = convexQuery(api.projects.list, {});
   const { data: projects } = useSuspenseQuery(projectsQuery);
 
+  const calculateDaysInProgress = (startDate: string | undefined) => {
+    if (!startDate) return null;
+    const start = new Date(startDate);
+    const today = new Date();
+    const diffTime = today.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays); // Ensure non-negative result
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -46,7 +55,7 @@ function ProjectsPage() {
       ) : (
         <div className="not-prose grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <Link key={project._id} to={`/projects/${project._id}`}>
+            <Link key={project._id} to={`/projects/${project._id}` as any}>
               <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                 <div className="card-body">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -70,6 +79,11 @@ function ProjectsPage() {
                     {project.startDate && (
                       <div className="text-sm">
                         <span className="font-semibold">Start Date:</span> {new Date(project.startDate).toLocaleDateString()}
+                      </div>
+                    )}
+                    {project.startDate && (
+                      <div className="text-sm">
+                        <span className="font-semibold">Days in Progress:</span> {calculateDaysInProgress(project.startDate)} days
                       </div>
                     )}
                   </div>

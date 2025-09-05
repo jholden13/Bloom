@@ -10,17 +10,19 @@ import { z } from "zod";
 export const Route = createFileRoute("/projects/$projectId/edit")({
   component: EditProjectPage,
   loader: async ({ context: { queryClient }, params }) => {
-    const projectQuery = convexQuery(api.projects.get, { id: params.projectId });
+    const projectQuery = convexQuery(api.projects.get, { id: params.projectId as any });
     await queryClient.ensureQueryData(projectQuery);
   },
 });
 
 const schema = z.object({
   name: z.string().min(1, "Project name is required"),
-  description: z.string().optional(),
-  analyst: z.string().optional(),
-  researchAssociate: z.string().optional(),
-  startDate: z.string().optional(),
+  description: z.string().min(1, "Project description is required"),
+  analyst: z.string().min(1, "Analyst is required"),
+  analystEmail: z.string().email("Please enter a valid email").min(1, "Analyst email is required"),
+  researchAssociate: z.string().min(1, "Research associate is required"),
+  researchAssociateEmail: z.string().email("Please enter a valid email").min(1, "Research associate email is required"),
+  startDate: z.string().min(1, "Start date is required"),
 });
 
 function EditProjectPage() {
@@ -28,7 +30,7 @@ function EditProjectPage() {
   const navigate = useNavigate();
   const updateProject = useMutation(api.projects.update);
 
-  const projectQuery = convexQuery(api.projects.get, { id: projectId });
+  const projectQuery = convexQuery(api.projects.get, { id: projectId as any });
   const { data: project } = useSuspenseQuery(projectQuery);
 
   if (!project) {
@@ -74,22 +76,31 @@ function EditProjectPage() {
       name: project.name || "",
       description: project.description || "",
       analyst: project.analyst || "",
+      analystEmail: project.analystEmail || "",
       researchAssociate: project.researchAssociate || "",
+      researchAssociateEmail: project.researchAssociateEmail || "",
       startDate: project.startDate || "",
     },
     validators: {
-      onChange: schema,
+      onChange: schema as any,
     },
     onSubmit: async ({ value }) => {
-      await updateProject({
-        id: projectId,
-        name: value.name,
-        description: value.description || undefined,
-        analyst: value.analyst || undefined,
-        researchAssociate: value.researchAssociate || undefined,
-        startDate: value.startDate || undefined,
-      });
-      navigate({ to: `/projects/${projectId}` });
+      try {
+        await updateProject({
+          id: projectId as any,
+          name: value.name,
+          description: value.description,
+          analyst: value.analyst,
+          analystEmail: value.analystEmail,
+          researchAssociate: value.researchAssociate,
+          researchAssociateEmail: value.researchAssociateEmail,
+          startDate: value.startDate,
+        });
+        navigate({ to: `/projects/${projectId}` });
+      } catch (error) {
+        console.error('Error updating project:', error);
+        alert('Failed to update project. Please try again.');
+      }
     },
   });
 
@@ -148,7 +159,6 @@ function EditProjectPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Description</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <textarea
                 className="textarea textarea-bordered w-full h-24"
@@ -168,8 +178,7 @@ function EditProjectPage() {
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Analyst</span>
-                  <span className="label-text-alt opacity-70">(optional)</span>
-                </label>
+                  </label>
                 <select
                   className="select select-bordered w-full"
                   value={field.state.value}
@@ -193,8 +202,7 @@ function EditProjectPage() {
               <div className="form-control">
                 <label className="label">
                   <span className="label-text font-semibold">Research Associate</span>
-                  <span className="label-text-alt opacity-70">(optional)</span>
-                </label>
+                  </label>
                 <select
                   className="select select-bordered w-full"
                   value={field.state.value}
@@ -213,13 +221,70 @@ function EditProjectPage() {
           />
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <form.Field
+            name="analystEmail"
+            children={(field) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Analyst Email</span>
+                  </label>
+                <input
+                  type="email"
+                  className={`input input-bordered w-full ${
+                    !field.state.meta.isValid ? "input-error" : ""
+                  }`}
+                  placeholder="analyst@company.com"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {!field.state.meta.isValid && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">
+                      {field.state.meta.errors.map((e: any) => e.message).join(", ")}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+          />
+
+          <form.Field
+            name="researchAssociateEmail"
+            children={(field) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-semibold">Research Associate Email</span>
+                  </label>
+                <input
+                  type="email"
+                  className={`input input-bordered w-full ${
+                    !field.state.meta.isValid ? "input-error" : ""
+                  }`}
+                  placeholder="associate@company.com"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                />
+                {!field.state.meta.isValid && (
+                  <label className="label">
+                    <span className="label-text-alt text-error">
+                      {field.state.meta.errors.map((e: any) => e.message).join(", ")}
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
         <form.Field
           name="startDate"
           children={(field) => (
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Start Date</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
               </label>
               <input
                 type="date"
@@ -245,6 +310,11 @@ function EditProjectPage() {
             type="submit"
             className="btn btn-primary"
             disabled={!form.state.canSubmit || form.state.isSubmitting}
+            onClick={() => {
+              console.log('Button clicked, canSubmit:', form.state.canSubmit, 'isSubmitting:', form.state.isSubmitting);
+              console.log('Form values:', form.state.values);
+              console.log('Form errors:', form.state.errors);
+            }}
           >
             {form.state.isSubmitting ? "Saving..." : "Save Changes"}
           </button>

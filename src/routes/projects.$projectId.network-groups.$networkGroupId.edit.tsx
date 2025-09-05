@@ -1,12 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { convexQuery } from "@convex-dev/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/../convex/_generated/api.js";
 import { z } from "zod";
 
-export const Route = createFileRoute("/projects/$projectId/network-groups/new")({
-  component: NewNetworkGroupPage,
+export const Route = createFileRoute("/projects/$projectId/network-groups/$networkGroupId/edit")({
+  component: EditNetworkGroupPage,
+  loader: async ({ context: { queryClient }, params }) => {
+    const networkGroupQuery = convexQuery(api.expertNetworkGroups.get, { id: params.networkGroupId as any });
+    await queryClient.ensureQueryData(networkGroupQuery);
+  },
 });
 
 const schema = z.object({
@@ -15,23 +21,42 @@ const schema = z.object({
   email: z.string().email("Please enter a valid email address").optional().or(z.literal("")),
 });
 
-function NewNetworkGroupPage() {
-  const { projectId } = Route.useParams();
+function EditNetworkGroupPage() {
+  const { projectId, networkGroupId } = Route.useParams();
   const navigate = useNavigate();
-  const createNetworkGroup = useMutation(api.expertNetworkGroups.create);
+  const updateNetworkGroup = useMutation(api.expertNetworkGroups.update);
+
+  const networkGroupQuery = convexQuery(api.expertNetworkGroups.get, { id: networkGroupId as any });
+  const { data: networkGroup } = useSuspenseQuery(networkGroupQuery);
+
+  if (!networkGroup) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold mb-4">Network group not found</h1>
+          <button
+            onClick={() => navigate({ to: `/projects/${projectId}` })}
+            className="btn btn-primary"
+          >
+            Back to Project
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      description: "",
-      email: "",
+      name: networkGroup.name || "",
+      description: networkGroup.description || "",
+      email: networkGroup.email || "",
     },
     validators: {
       onChange: schema as any,
     },
     onSubmit: async ({ value }) => {
-      await createNetworkGroup({
-        projectId: projectId as any,
+      await updateNetworkGroup({
+        id: networkGroupId as any,
         name: value.name,
         description: value.description || undefined,
         email: value.email || undefined,
@@ -50,8 +75,8 @@ function NewNetworkGroupPage() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Project
         </button>
-        <h1 className="text-3xl font-bold mb-2">New Expert Network Group</h1>
-        <p className="opacity-80">Create a new network group to organize your experts</p>
+        <h1 className="text-3xl font-bold mb-2">Edit Network Group</h1>
+        <p className="opacity-80">Update the network group details</p>
       </div>
 
       <form
@@ -114,7 +139,7 @@ function NewNetworkGroupPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-semibold">Contact Email</span>
-                <span className="label-text-alt opacity-70">(optional)</span>
+                <span className="label-text-alt opacity-70">(required for scheduling calls)</span>
               </label>
               <input
                 type="email"
@@ -156,7 +181,7 @@ function NewNetworkGroupPage() {
             className="btn btn-primary"
             disabled={!form.state.canSubmit || form.state.isSubmitting}
           >
-            {form.state.isSubmitting ? "Creating..." : "Create Network Group"}
+            {form.state.isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>

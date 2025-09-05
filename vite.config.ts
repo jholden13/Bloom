@@ -6,6 +6,7 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/ENsearch/",
   plugins: [
     // TanStack Router plugin must be passed before React plugin
     TanStackRouterVite({ target: "react", autoCodeSplitting: true }),

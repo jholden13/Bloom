@@ -20,6 +20,7 @@ import { Route as ProjectsProjectIdEditImport } from './routes/projects.$project
 import { Route as ProjectsProjectIdCallsImport } from './routes/projects.$projectId.calls'
 import { Route as ProjectsProjectIdNetworkGroupsNewImport } from './routes/projects.$projectId.network-groups.new'
 import { Route as ProjectsProjectIdExpertsNewImport } from './routes/projects.$projectId.experts.new'
+import { Route as ProjectsProjectIdNetworkGroupsNetworkGroupIdEditImport } from './routes/projects.$projectId.network-groups.$networkGroupId.edit'
 import { Route as ProjectsProjectIdExpertsExpertIdEditImport } from './routes/projects.$projectId.experts.$expertId.edit'
 
 // Create/Update Routes
@@ -77,6 +78,13 @@ const ProjectsProjectIdExpertsNewRoute =
   ProjectsProjectIdExpertsNewImport.update({
     id: '/experts/new',
     path: '/experts/new',
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+
+const ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute =
+  ProjectsProjectIdNetworkGroupsNetworkGroupIdEditImport.update({
+    id: '/network-groups/$networkGroupId/edit',
+    path: '/network-groups/$networkGroupId/edit',
     getParentRoute: () => ProjectsProjectIdRoute,
   } as any)
 
@@ -161,6 +169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdExpertsExpertIdEditImport
       parentRoute: typeof ProjectsProjectIdImport
     }
+    '/projects/$projectId/network-groups/$networkGroupId/edit': {
+      id: '/projects/$projectId/network-groups/$networkGroupId/edit'
+      path: '/network-groups/$networkGroupId/edit'
+      fullPath: '/projects/$projectId/network-groups/$networkGroupId/edit'
+      preLoaderRoute: typeof ProjectsProjectIdNetworkGroupsNetworkGroupIdEditImport
+      parentRoute: typeof ProjectsProjectIdImport
+    }
   }
 }
 
@@ -173,6 +188,7 @@ interface ProjectsProjectIdRouteChildren {
   ProjectsProjectIdExpertsNewRoute: typeof ProjectsProjectIdExpertsNewRoute
   ProjectsProjectIdNetworkGroupsNewRoute: typeof ProjectsProjectIdNetworkGroupsNewRoute
   ProjectsProjectIdExpertsExpertIdEditRoute: typeof ProjectsProjectIdExpertsExpertIdEditRoute
+  ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute: typeof ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute
 }
 
 const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
@@ -184,6 +200,8 @@ const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
     ProjectsProjectIdNetworkGroupsNewRoute,
   ProjectsProjectIdExpertsExpertIdEditRoute:
     ProjectsProjectIdExpertsExpertIdEditRoute,
+  ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute:
+    ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute,
 }
 
 const ProjectsProjectIdRouteWithChildren =
@@ -200,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
   '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
   '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
+  '/projects/$projectId/network-groups/$networkGroupId/edit': typeof ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute
 }
 
 export interface FileRoutesByTo {
@@ -212,6 +231,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
   '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
   '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
+  '/projects/$projectId/network-groups/$networkGroupId/edit': typeof ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute
 }
 
 export interface FileRoutesById {
@@ -226,6 +246,7 @@ export interface FileRoutesById {
   '/projects/$projectId/experts/new': typeof ProjectsProjectIdExpertsNewRoute
   '/projects/$projectId/network-groups/new': typeof ProjectsProjectIdNetworkGroupsNewRoute
   '/projects/$projectId/experts/$expertId/edit': typeof ProjectsProjectIdExpertsExpertIdEditRoute
+  '/projects/$projectId/network-groups/$networkGroupId/edit': typeof ProjectsProjectIdNetworkGroupsNetworkGroupIdEditRoute
 }
 
 export interface FileRouteTypes {
@@ -241,6 +262,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/experts/new'
     | '/projects/$projectId/network-groups/new'
     | '/projects/$projectId/experts/$expertId/edit'
+    | '/projects/$projectId/network-groups/$networkGroupId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -252,6 +274,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/experts/new'
     | '/projects/$projectId/network-groups/new'
     | '/projects/$projectId/experts/$expertId/edit'
+    | '/projects/$projectId/network-groups/$networkGroupId/edit'
   id:
     | '__root__'
     | '/'
@@ -264,6 +287,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/experts/new'
     | '/projects/$projectId/network-groups/new'
     | '/projects/$projectId/experts/$expertId/edit'
+    | '/projects/$projectId/network-groups/$networkGroupId/edit'
   fileRoutesById: FileRoutesById
 }
 
@@ -308,7 +332,8 @@ export const routeTree = rootRoute
         "/projects/$projectId/",
         "/projects/$projectId/experts/new",
         "/projects/$projectId/network-groups/new",
-        "/projects/$projectId/experts/$expertId/edit"
+        "/projects/$projectId/experts/$expertId/edit",
+        "/projects/$projectId/network-groups/$networkGroupId/edit"
       ]
     },
     "/projects/new": {
@@ -339,6 +364,10 @@ export const routeTree = rootRoute
     },
     "/projects/$projectId/experts/$expertId/edit": {
       "filePath": "projects.$projectId.experts.$expertId.edit.tsx",
+      "parent": "/projects/$projectId"
+    },
+    "/projects/$projectId/network-groups/$networkGroupId/edit": {
+      "filePath": "projects.$projectId.network-groups.$networkGroupId.edit.tsx",
       "parent": "/projects/$projectId"
     }
   }

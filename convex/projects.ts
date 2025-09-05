@@ -20,15 +20,19 @@ export const create = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
+    analystEmail: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    researchAssociateEmail: v.optional(v.string()),
     startDate: v.optional(v.string()),
   },
-  handler: async (ctx, { name, description, analyst, researchAssociate, startDate }) => {
+  handler: async (ctx, { name, description, analyst, analystEmail, researchAssociate, researchAssociateEmail, startDate }) => {
     return await ctx.db.insert("projects", {
       name,
       description,
       analyst,
+      analystEmail,
       researchAssociate,
+      researchAssociateEmail,
       startDate,
     });
   },
@@ -40,15 +44,19 @@ export const update = mutation({
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
+    analystEmail: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    researchAssociateEmail: v.optional(v.string()),
     startDate: v.optional(v.string()),
   },
-  handler: async (ctx, { id, name, description, analyst, researchAssociate, startDate }) => {
+  handler: async (ctx, { id, name, description, analyst, analystEmail, researchAssociate, researchAssociateEmail, startDate }) => {
     const updates: any = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (analyst !== undefined) updates.analyst = analyst;
+    if (analystEmail !== undefined) updates.analystEmail = analystEmail;
     if (researchAssociate !== undefined) updates.researchAssociate = researchAssociate;
+    if (researchAssociateEmail !== undefined) updates.researchAssociateEmail = researchAssociateEmail;
     if (startDate !== undefined) updates.startDate = startDate;
     
     return await ctx.db.patch(id, updates);

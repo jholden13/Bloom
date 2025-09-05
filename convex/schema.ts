@@ -11,7 +11,9 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     analyst: v.optional(v.string()),
+    analystEmail: v.optional(v.string()),
     researchAssociate: v.optional(v.string()),
+    researchAssociateEmail: v.optional(v.string()),
     startDate: v.optional(v.string()), // ISO date string (YYYY-MM-DD)
     createdBy: v.optional(v.id("users")), // Made optional for demo without auth
   }),
@@ -20,6 +22,7 @@ export default defineSchema({
     projectId: v.id("projects"),
     name: v.string(),
     description: v.optional(v.string()),
+    email: v.optional(v.string()),
   })
     .index("by_project", ["projectId"]),
 
@@ -37,6 +40,7 @@ export default defineSchema({
       v.literal("schedule call")
     ),
     notes: v.optional(v.string()),
+    screeningQuestions: v.optional(v.string()),
   })
     .index("by_project", ["projectId"])
     .index("by_network_group", ["networkGroupId"])
