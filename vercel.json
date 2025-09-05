@@ -5,19 +5,11 @@
   "rewrites": [
     {
       "source": "/ensearch/(.*)",
-      "destination": "/ensearch/index.html"
+      "destination": "/index.html"
     },
     {
       "source": "/ensearch",
-      "destination": "/ensearch/index.html"
-    },
-    {
-      "source": "/trips/(.*)",
-      "destination": "/trips/index.html"
-    },
-    {
-      "source": "/trips",
-      "destination": "/trips/index.html"
+      "destination": "/index.html"
     }
   ]
 }
