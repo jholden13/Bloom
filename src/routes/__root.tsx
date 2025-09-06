@@ -1,11 +1,3 @@
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useAuth as useClerkAuth,
-  useUser,
-} from "@clerk/clerk-react";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -14,16 +6,10 @@ import {
   createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import {
-  Authenticated,
-  ConvexReactClient,
-  Unauthenticated,
-  useMutation,
-} from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import { Menu } from "lucide-react";
-import { useEffect, useState } from "react";
-import { api } from "../../convex/_generated/api";
+import { useState } from "react";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -41,15 +27,10 @@ function RootComponent() {
   };
 
   return (
-    <ClerkProvider
-      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
-      afterSignOutUrl="/"
-    >
-      <ConvexProviderWithClerk client={convex} useAuth={useClerkAuth}>
-        <QueryClientProvider client={queryClient}>
-          <div className="min-h-screen flex flex-col">
-            {/* Bypass authentication - always show authenticated layout */}
-            <div>
+    <ConvexProvider client={convex}>
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen flex flex-col">
+          <div>
               {/* Mobile sidebar drawer */}
               <div className="drawer min-h-screen">
                 <input
@@ -156,20 +137,7 @@ function RootComponent() {
           </div>
           {import.meta.env.DEV && <TanStackRouterDevtools />}
         </QueryClientProvider>
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+      </ConvexProvider>
   );
 }
 
-function EnsureUser() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const ensureUser = useMutation(api.users.ensureUser);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn && user) {
-      void ensureUser();
-    }
-  }, [isLoaded, isSignedIn, user, ensureUser]);
-
-  return null;
-}
