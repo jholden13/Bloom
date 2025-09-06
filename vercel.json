@@ -4,11 +4,11 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/ensearch/(.*)",
+      "source": "/ensearch",
       "destination": "/index.html"
     },
     {
-      "source": "/ensearch",
+      "source": "/ensearch/((?!assets/).*)",
       "destination": "/index.html"
     }
   ]
