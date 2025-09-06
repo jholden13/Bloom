@@ -24,6 +24,7 @@ convexQueryClient.connect(queryClient);
 
 const router = createRouter({ 
   routeTree,
+  basepath: "/ensearch",
   context: {
     queryClient,
     convexClient: convex,
