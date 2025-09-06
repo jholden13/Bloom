@@ -1,19 +1,5 @@
 {
   "buildCommand": "pnpx convex deploy --cmd 'pnpm run build:deploy'",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/ensearch/assets/(.*)",
-      "destination": "/assets/$1"
-    },
-    {
-      "source": "/ensearch",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/ensearch/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": "vite"
 }
